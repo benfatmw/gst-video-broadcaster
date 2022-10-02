@@ -1,11 +1,12 @@
 package com.kalyzee.kontroller_services_api.dtos.system.update;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ImageType {
-    @SerializedName("OS")
+    @JsonProperty("OS")
     OS("OS"),
-    @SerializedName("APK")
+    @JsonProperty("APK")
     APK("APK");
 
     private String imageType;
@@ -18,6 +19,7 @@ public enum ImageType {
         return imageType;
     }
 
+    @JsonValue
     public static ImageType value(String action) {
         for (ImageType e : values()) {
             if (e.imageType.equals(action)) {

@@ -1,11 +1,12 @@
 package com.kalyzee.kontroller_services_api.dtos.system.update;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum UpdateMode {
-    @SerializedName("MANDATORY")
+    @JsonProperty("MANDATORY")
     MANDATORY("MANDATORY"),
-    @SerializedName("SILENT")
+    @JsonProperty("SILENT")
     SILENT("SILENT");
 
     private String updateMode;
@@ -18,6 +19,7 @@ public enum UpdateMode {
         return updateMode;
     }
 
+    @JsonValue
     public static UpdateMode value(String action) {
         for (UpdateMode e : values()) {
             if (e.updateMode.equals(action)) {

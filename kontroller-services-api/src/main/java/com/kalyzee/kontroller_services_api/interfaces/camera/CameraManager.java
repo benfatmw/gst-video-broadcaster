@@ -13,19 +13,19 @@ import com.kalyzee.kontroller_services_api.interfaces.ContextChangedListener;
 
 public interface CameraManager {
 
-    public void move(MoveDirection direction) throws MoveCameraFailureException;
+    void move(MoveDirection direction) throws MoveCameraFailureException;
 
-    public void stopMoving() throws StopMovingCameraFailureException;
+    void stopMoving() throws StopMovingCameraFailureException;
 
-    public void zoom(ZoomType type) throws ZoomFailureException;
+    void zoom(ZoomType type) throws ZoomFailureException;
 
-    public void stopZooming() throws StopZoomingFailureException;
+    void stopZooming() throws StopZoomingFailureException;
 
-    public void setPresetView(int presetId) throws SetPresetViewFailureException;
+    void setPresetView(int presetId) throws SetPresetViewFailureException;
 
-    public void moveToPresetView(int presetId) throws MoveToPresetViewFailureException;
+    void moveToPresetView(int presetId) throws MoveToPresetViewFailureException;
 
-    public void registerContextChangedListener(ContextChangedListener listener);
+    void registerContextChangedListener(ContextChangedListener listener);
 
-    public void unregisterContextChangedListener(ContextChangedListener listener);
+    void unregisterContextChangedListener(ContextChangedListener listener);
 }

@@ -1,16 +1,18 @@
 package com.kalyzee.panel_connection_manager.mappers.video;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class WebrtcSignallingMessage<T> {
-    @SerializedName("action")
+    @JsonProperty("action")
     private WebrtcSignallingAction action;
-    @SerializedName("correlation_id")
+    @JsonProperty("correlation_id")
     private String correlationId;
-    @SerializedName("content")
+    @JsonProperty("content")
     private T content;
 
-    public WebrtcSignallingMessage(WebrtcSignallingAction action, T content, String correlationId) {
+    public WebrtcSignallingMessage(@JsonProperty("action") WebrtcSignallingAction action,
+                                   @JsonProperty("content") T content,
+                                   @JsonProperty("correlation_id") String correlationId) {
         this.action = action;
         this.content = content;
         this.correlationId = correlationId;

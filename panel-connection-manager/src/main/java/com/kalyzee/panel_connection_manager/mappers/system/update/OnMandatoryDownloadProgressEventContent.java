@@ -1,15 +1,24 @@
 package com.kalyzee.panel_connection_manager.mappers.system.update;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class OnMandatoryDownloadProgressEventContent {
 
-    @SerializedName("session_id")
+    @JsonProperty("session_id")
     private String sessionId;
-    @SerializedName("current_size")
+    @JsonProperty("current_size")
     private long currentSize;
-    @SerializedName("total_size")
+    @JsonProperty("total_size")
     private long totalSize;
+
+    public OnMandatoryDownloadProgressEventContent(@JsonProperty("session_id") String sessionId,
+                                                   @JsonProperty("current_size") long currentSize,
+                                                   @JsonProperty("total_size") long totalSize) {
+        this.sessionId = sessionId;
+        this.currentSize = currentSize;
+        this.totalSize = totalSize;
+    }
 
     public long getCurrentSize() {
         return currentSize;
@@ -26,13 +35,6 @@ public class OnMandatoryDownloadProgressEventContent {
     public void setTotalSize(long totalSize) {
         this.totalSize = totalSize;
     }
-
-    public OnMandatoryDownloadProgressEventContent(String sessionId, long currentSize, long totalSize) {
-        this.sessionId = sessionId;
-        this.currentSize = currentSize;
-        this.totalSize = totalSize;
-    }
-
 
     public String getSessionId() {
         return sessionId;

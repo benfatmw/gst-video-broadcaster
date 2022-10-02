@@ -1,25 +1,32 @@
 package com.kalyzee.kontroller_services_api.dtos.video;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UploadProfile {
 
-    @SerializedName("type")
+    @JsonProperty("type")
     private String type;
-    @SerializedName("host")
+    @JsonProperty("host")
     private String host;
-    @SerializedName("username")
+    @JsonProperty("username")
     private String username;
-    @SerializedName("password")
+    @JsonProperty("password")
     private String password;
-    @SerializedName("port")
+    @JsonProperty("port")
     private int port;
-    @SerializedName("absolute_path")
+    @JsonProperty("absolute_path")
     private String absolutePath;
-    @SerializedName("file_name")
+    @JsonProperty("file_name")
     private String fileName;
 
-    public UploadProfile(String type, String host, String username, String password, int port, String absolutePath, String fileName) {
+    public UploadProfile(@JsonProperty("type") String type,
+                         @JsonProperty("host") String host,
+                         @JsonProperty("username") String username,
+                         @JsonProperty("password") String password,
+                         @JsonProperty("port") int port,
+                         @JsonProperty("absolute_path") String absolutePath,
+                         @JsonProperty("file_name") String fileName) {
         this.type = type;
         this.host = host;
         this.username = username;

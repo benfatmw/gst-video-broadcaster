@@ -1,203 +1,101 @@
 package com.kalyzee.kontroller;
 
-import android.content.SharedPreferences;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 
-import com.google.android.material.snackbar.Snackbar;
-
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import android.text.format.Formatter;
 import android.util.Log;
-import android.view.View;
 
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
-import androidx.security.crypto.EncryptedSharedPreferences;
-import androidx.security.crypto.MasterKeys;
+import com.kalyzee.kontroller.registration.LocalWebsocketServer;
+import com.kalyzee.panel_connection_manager.CredentialsManager;
+import com.kalyzee.panel_connection_manager.ICredentialsUpdatedListener;
+import com.kalyzee.panel_connection_manager.SessionManager;
 
-import com.kalyzee.kontroller.databinding.ActivityMainBinding;
-import com.kalyzee.panel_connection_manager.SocketIoManager;
-import com.kalyzee.panel_connection_manager.mappers.admin.RegisterRequestContent;
-import com.kalyzee.panel_connection_manager.mappers.session.LoginRequestContent;
-import com.kalyzee.panel_connection_manager.utils.CredentialsUtils;
-
-import android.view.Menu;
-import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+
+    private static final String FAILED_TO_LOGIN_AFTER_REGISTRATION = "Failed to login after credentials update.";
+    private static final String FAILED_TO_SETUP_PANEL_CONNECTION = "Failed to create and set up panel connection.";
+    private static final String DEVICE_IS_NOT_REGISTERED = "Device is not registered.";
+
     private static final String CREDENTIALS_PREFERENCE = "credentials";
 
-    private AppBarConfiguration appBarConfiguration;
-    private ActivityMainBinding binding;
+    private SessionManager sessionManager;
+    private CredentialsManager credentialsManager;
+    private LocalWebsocketServer wsServer;
+    private String macAddress;
 
-    private SharedPreferences credentialsPref;
-
-    // Socket IO manager dependencies
-    private SocketIoManager socketMgr;
-    private PanelConnectionRunnable panelConnectionRunnable;
-    private Thread panelConnectionWorkerThread;
-
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            Log.e(TAG, "Required permissions are not grant by the system");
+        }
+        macAddress = wifiManager.getConnectionInfo().getMacAddress();
 
-        setSupportActionBar(binding.toolbar);
-
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-
-        binding.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
+        /**
+         * If the camera has been already registered -->
+         * Instantiate the Socket io manager and start panel connection worker thread
+         * Login/authenticate to Panel if the camera has been registered
+         * and set up a listener to handle its requests/commands.
+         */
         try {
-            credentialsPref = EncryptedSharedPreferences.create(
-                    CREDENTIALS_PREFERENCE,
-                    MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
-                    getApplicationContext(),
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            );
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to create Credentials shared preferences.", e);
-        }
-
-        // Start PAMERA socket client:
-        // Login/authenticate to Panel if the camera has been registered
-        // and set up a listener to handle its requests/commands.
-        startPameraSocket();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        return NavigationUI.navigateUp(navController, appBarConfiguration)
-                || super.onSupportNavigateUp();
-    }
-
-    // Pamera connection methods
-    private void startPameraSocket() {
-        // First check if the camera has been already registered
-        if (!CredentialsUtils.isCameraRegistered(credentialsPref)) {
-            Log.e(TAG, "Failed to start Pamera socket. The camera is not yet registered.");
-            return;
-        }
-
-        // Instantiate the Socket io manager
-        try {
-            // Credentials are stored in a shared preferences after encrypting them.
-            // The encryption key is managed by the Android key management framework: KeyStore.
-            // Credentials must be retrieved from a sharedPreferences
-            socketMgr = new SocketIoManagerBuilder(CredentialsUtils.getPanelUri(credentialsPref)).build();
-
-            // The camera is successfully logged in/authenticated to the Panel.
-            // --> Start listening to Panel requests
-            panelConnectionRunnable = new PanelConnectionRunnable();
-            panelConnectionWorkerThread = new Thread(panelConnectionRunnable);
-            panelConnectionWorkerThread.start();
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to start Pamera connection.", e);
-        }
-    }
-
-    private void stopPameraSocket() {
-        // First logout
-        if (socketMgr != null) {
-            socketMgr.logout();
-            socketMgr = null;
-        }
-        // Stop properly panelConnectionWorkerThread.
-        if (panelConnectionWorkerThread != null) {
-            panelConnectionRunnable.terminate();
-            try {
-                panelConnectionWorkerThread.join();
-            } catch (InterruptedException e) {
-                Log.e(TAG, "Failed to stop panelConnectionWorkerThread.", e);
-            } finally {
-                panelConnectionWorkerThread = null;
-            }
-        }
-    }
-
-    // Called from native code register camera.
-    public boolean registerCamera(String panel_uri, String camera_id, String camera_password, String room_id) {
-        Log.i(TAG, "Registering camera." + "panel_uri: " + panel_uri + " camera_id: " + camera_id + " camera_password: " + camera_password + " room_id: " + room_id);
-
-        try {
-            // Stop the current Pamera socket session
-            stopPameraSocket();
-            socketMgr = new SocketIoManagerBuilder(panel_uri).build();
-            socketMgr.register(new RegisterRequestContent(camera_id, camera_password, room_id));
-            // Credentials are stored in a shared preferences after encrypting them.
-            // The encryption key is managed by the Android key management framework: KeyStore.
-            CredentialsUtils.storeCredentials(credentialsPref, panel_uri, camera_id, camera_password, room_id);
-            // Restart a new Pamera socket session
-            startPameraSocket();
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to register camera. ", e);
-            return false;
-        }
-        return true;
-    }
-
-    private class PanelConnectionRunnable implements Runnable {
-
-        private volatile boolean looping = true;
-
-        public void terminate() {
-            looping = false;
-        }
-
-        @Override
-        public void run() {
-            while (looping) {
-                try {
-                    if (!socketMgr.isLoggedIn()) {
-                        // Authenticate/log in using credentials
-                        String camera_id = CredentialsUtils.getCameraId(credentialsPref);
-                        String camera_password = CredentialsUtils.getCameraPassword(credentialsPref);
-                        socketMgr.login(new LoginRequestContent(camera_id, camera_password));
-                        socketMgr.handlePanelRequests();
+            credentialsManager = new CredentialsManager(CREDENTIALS_PREFERENCE, getApplicationContext());
+            credentialsManager.registerCredentialsUpdatedListener(new ICredentialsUpdatedListener() {
+                @Override
+                public void onUpdated(String panelUri, String certificate) {
+                    try {
+                        /** Stop the current session if there is any */
+                        if (sessionManager != null) {
+                            sessionManager.stopSession();
+                            sessionManager = null;
+                        }
+                        sessionManager = new SessionManagerBuilder(credentialsManager, getApplicationContext()).build();
+                        sessionManager.startSession(macAddress);
+                    } catch (Exception e) {
+                        Log.e(TAG, FAILED_TO_LOGIN_AFTER_REGISTRATION, e);
                     }
-                    Thread.sleep(10000);
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to establish connection with the Panel.", e);
                 }
+            });
+
+            if (credentialsManager.isRegistered()) {
+                sessionManager = new SessionManagerBuilder(credentialsManager, getApplicationContext()).build();
+                sessionManager.startSession(macAddress);
+            } else {
+                Log.i(TAG, FAILED_TO_SETUP_PANEL_CONNECTION);
+                wsServer = new LocalWebsocketServer(Formatter.formatIpAddress(wifiManager.getConnectionInfo().getIpAddress()),
+                        macAddress,
+                        credentialsManager);
+                wsServer.start();
             }
+        } catch (Exception e) {
+            Log.e(TAG, FAILED_TO_SETUP_PANEL_CONNECTION, e);
         }
     }
+
+    protected void onDestroy() {
+        sessionManager.stopSession();
+        super.onDestroy();
+    }
+
 }

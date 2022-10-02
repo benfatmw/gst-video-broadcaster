@@ -1,41 +1,40 @@
 package com.kalyzee.kontroller_services_api.dtos.system;
 
-import android.os.SystemClock;
 
-import com.google.gson.annotations.SerializedName;
-
-import java.util.TimeZone;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SystemInformation {
 
-    @SerializedName("architecture")
+    @JsonProperty("architecture")
     private String architecture;
-    @SerializedName("os_version_name")
+    @JsonProperty("os_version_name")
     private String osVersionName;
-    @SerializedName("os_version_code")
+    @JsonProperty("os_version_code")
     private int osVersionCode;
-    @SerializedName("os_build_timestamp")
+    @JsonProperty("os_build_timestamp")
     private long osBuildTimestamp;
-    @SerializedName("c_module_version")
+    @JsonProperty("c_module_version")
     private String cModuleVersion;
-    @SerializedName("java_module_version")
+    @JsonProperty("java_module_version")
     private String javaModuleVersion;
-    @SerializedName("aosp_patches_version")
+    @JsonProperty("aosp_patches_version")
     private String aospPatchesVersion;
-    @SerializedName("camera_firmware_version")
+    @JsonProperty("camera_firmware_version")
     private String cameraFirmwareVersion;
-    @SerializedName("hdmi_firmware_version")
+    @JsonProperty("hdmi_firmware_version")
     private String hdmiFirmwareVersion;
-    @SerializedName("timezone_raw_offset")
-    private int timezoneRawOffset = TimeZone.getDefault().getRawOffset();
-    @SerializedName("elapsed_realtime")
-    private long elapsedRealTime = SystemClock.elapsedRealtime();
-    @SerializedName("current_time_in_ms")
-    private long currentTimeInMs = System.currentTimeMillis();
 
-    public SystemInformation(String architecture, String osVersionName, int osVersionCode,
-                             long osBuildTimestamp, String cModuleVersion, String javaModuleVersion,
-                             String aospPatchesVersion, String cameraFirmwareVersion, String hdmiFirmwareVersion) {
+    @JsonCreator
+    public SystemInformation(@JsonProperty("architecture") String architecture,
+                             @JsonProperty("os_version_name") String osVersionName,
+                             @JsonProperty("os_version_code") int osVersionCode,
+                             @JsonProperty("os_build_timestamp") long osBuildTimestamp,
+                             @JsonProperty("c_module_version") String cModuleVersion,
+                             @JsonProperty("java_module_version") String javaModuleVersion,
+                             @JsonProperty("aosp_patches_version") String aospPatchesVersion,
+                             @JsonProperty("camera_firmware_version") String cameraFirmwareVersion,
+                             @JsonProperty("hdmi_firmware_version") String hdmiFirmwareVersion) {
         this.architecture = architecture;
         this.osVersionName = osVersionName;
         this.osVersionCode = osVersionCode;
@@ -125,30 +124,6 @@ public class SystemInformation {
 
     public void setHdmiFirmwareVersion(String hdmiFirmwareVersion) {
         this.hdmiFirmwareVersion = hdmiFirmwareVersion;
-    }
-
-    public int getTimezoneRawOffset() {
-        return timezoneRawOffset;
-    }
-
-    public void setTimezoneRawOffset(int timezoneRawOffset) {
-        this.timezoneRawOffset = timezoneRawOffset;
-    }
-
-    public long getElapsedRealTime() {
-        return elapsedRealTime;
-    }
-
-    public void setElapsedRealTime(long elapsedRealTime) {
-        this.elapsedRealTime = elapsedRealTime;
-    }
-
-    public long getCurrentTimeInMs() {
-        return currentTimeInMs;
-    }
-
-    public void setCurrentTimeInMs(long currentTimeInMs) {
-        this.currentTimeInMs = currentTimeInMs;
     }
 
 }

@@ -1,12 +1,13 @@
 package com.kalyzee.panel_connection_manager.mappers.system.update;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class StartMandatoryDownloadResponseContent {
-    @SerializedName("session_id")
+    @JsonProperty("session_id")
     private String sessionId;
 
-    public StartMandatoryDownloadResponseContent(String sessionId) {
+    public StartMandatoryDownloadResponseContent(@JsonProperty("session_id") String sessionId) {
         this.sessionId = sessionId;
     }
 

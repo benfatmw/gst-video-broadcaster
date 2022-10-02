@@ -13,13 +13,15 @@ public class DownloadSessionState {
     public static final int ERROR = 1;
     public static final int RUNNING = 2;
     public static final int FINISHED = 3;
-    private static final SparseArray<String> STATE_MAP = new SparseArray<>();
+    public static final int ABORTED = 4;
+    private static final SparseArray<String> DOWNLOAD_STATE_MAP = new SparseArray<>();
 
     static {
-        STATE_MAP.put(0, "IDLE");
-        STATE_MAP.put(1, "ERROR");
-        STATE_MAP.put(2, "RUNNING");
-        STATE_MAP.put(4, "FINISHED");
+        DOWNLOAD_STATE_MAP.put(0, "IDLE");
+        DOWNLOAD_STATE_MAP.put(1, "ERROR");
+        DOWNLOAD_STATE_MAP.put(2, "RUNNING");
+        DOWNLOAD_STATE_MAP.put(3, "FINISHED");
+        DOWNLOAD_STATE_MAP.put(4, "ABORTED");
     }
 
     /**
@@ -33,6 +35,7 @@ public class DownloadSessionState {
                     .put(RUNNING, ImmutableSet.of(
                             IDLE, ERROR, FINISHED))
                     .put(FINISHED, ImmutableSet.of(IDLE))
+                    .put(ABORTED, ImmutableSet.of(IDLE))
                     .build();
 
     private AtomicInteger state;
@@ -64,10 +67,44 @@ public class DownloadSessionState {
     /**
      * Converts status code to status name.
      */
-    public static String getStateText(int state) {
-        return STATE_MAP.get(state);
+    public static String getStateText(int stateCode) {
+        return DOWNLOAD_STATE_MAP.get(stateCode);
     }
 
+    /**
+     * Converts status name to status code.
+     */
+    public static int getStateInt(String stateName) {
+        /**
+         * We use this function instead of #indexOfValue
+         * because indexOfValue(E value) method the value is compared with the array elements
+         * by reference (not logical value):
+         */
+        return indexOfValueByValue (DOWNLOAD_STATE_MAP, stateName);
+    }
+
+    /**
+     * Returns an index for which would return the
+     * specified value, or a negative number if no keys map to the
+     * specified value.
+     * <p>Beware that this is a linear search, unlike lookups by key,
+     * and that multiple keys can map to the same value and this will
+     * find only one of them.
+     */
+    public static int indexOfValueByValue(SparseArray<String> array, String value) {
+        for (int i = 0; i < array.size(); i++) {
+            if (value == null) {
+                if (array.get(i) == null) {
+                    return i;
+                }
+            } else {
+                if (value.equals(array.get(i))) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
     /**
      * Defines invalid state transition exception.
      */

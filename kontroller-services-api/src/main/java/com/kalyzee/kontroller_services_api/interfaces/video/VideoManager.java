@@ -1,43 +1,57 @@
 package com.kalyzee.kontroller_services_api.interfaces.video;
 
+
 import com.kalyzee.kontroller_services_api.dtos.video.LiveProfile;
+import com.kalyzee.kontroller_services_api.dtos.video.RecordSessionContext;
 import com.kalyzee.kontroller_services_api.dtos.video.UploadProfile;
+import com.kalyzee.kontroller_services_api.dtos.video.UploadSessionContext;
 import com.kalyzee.kontroller_services_api.dtos.video.VideoContext;
 import com.kalyzee.kontroller_services_api.exceptions.video.CreateWebrtcFeedbackConnectionException;
+import com.kalyzee.kontroller_services_api.exceptions.video.GetRecordSessionContextFailureException;
+import com.kalyzee.kontroller_services_api.exceptions.video.GetUploadSessionContextException;
 import com.kalyzee.kontroller_services_api.exceptions.video.GetVideoContextException;
 import com.kalyzee.kontroller_services_api.exceptions.video.RemoveRecordFileByIdFailureException;
 import com.kalyzee.kontroller_services_api.exceptions.video.StartLiveFailureException;
 import com.kalyzee.kontroller_services_api.exceptions.video.StartRecordFailureException;
-import com.kalyzee.kontroller_services_api.exceptions.video.StartVodFailureException;
 import com.kalyzee.kontroller_services_api.exceptions.video.StopLiveFailureException;
 import com.kalyzee.kontroller_services_api.exceptions.video.StopRecordFailureException;
-import com.kalyzee.kontroller_services_api.exceptions.video.StopVodFailureException;
 import com.kalyzee.kontroller_services_api.exceptions.video.SwitchSceneFailureException;
+import com.kalyzee.kontroller_services_api.exceptions.video.UploadVideoFailureException;
 import com.kalyzee.kontroller_services_api.interfaces.ContextChangedListener;
 
 public interface VideoManager {
 
-    public void startRecord(String title) throws StartRecordFailureException;
+    int startRecord() throws StartRecordFailureException;
 
-    public int stopRecord() throws StopRecordFailureException;
+    int stopRecord(int sessionId) throws StopRecordFailureException;
 
-    public void removeRecordFileById(int recordId) throws RemoveRecordFileByIdFailureException;
+    void removeRecordFileById(int recordId) throws RemoveRecordFileByIdFailureException;
 
-    public void startLive(LiveProfile liveProfile) throws StartLiveFailureException;
+    RecordSessionContext geRecordSessionContext(int sessionId) throws GetRecordSessionContextFailureException;
 
-    public void stopLive() throws StopLiveFailureException;
+    void startLive(LiveProfile liveProfile) throws StartLiveFailureException;
 
-    public void startVod(int videoId, UploadProfile uploadProfile) throws StartVodFailureException;
+    void stopLive() throws StopLiveFailureException;
 
-    public void stopVod(int videoId) throws StopVodFailureException;
+    int uploadVideoById(int videoId, UploadProfile uploadProfile) throws UploadVideoFailureException;
 
-    public VideoContext getVideoContext() throws GetVideoContextException;
+    UploadSessionContext getUploadSessionContext(int sessionId) throws GetUploadSessionContextException;
 
-    public void switchScene(int id) throws SwitchSceneFailureException;
+    VideoContext getVideoContext() throws GetVideoContextException;
 
-    public void createWebrtcFeedbackConnection(String uri) throws CreateWebrtcFeedbackConnectionException;
+    void switchScene(int id) throws SwitchSceneFailureException;
 
-    public void registerContextChangedListener(ContextChangedListener listener);
+    void createWebrtcFeedbackConnection(String uri) throws CreateWebrtcFeedbackConnectionException;
 
-    public void unregisterContextChangedListener(ContextChangedListener listener);
+    void registerContextChangedListener(ContextChangedListener listener);
+
+    void unregisterContextChangedListener(ContextChangedListener listener);
+
+    void registerVideoUploadStatusChangedListener(IVideoUploadStatusChangedListener listener);
+
+    void unregisterVideoUploadStatusChangedListener(IVideoUploadStatusChangedListener listener);
+
+    void registerRecordErrorListener(IRecordErrorListener listener);
+
+    void unregisterRecordErrorListener(IRecordErrorListener listener);
 }

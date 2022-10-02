@@ -1,15 +1,16 @@
 package com.kalyzee.panel_connection_manager.mappers.system.update;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class OnMandatoryUpdateFailureEventContent {
 
-    @SerializedName("session_id")
+    @JsonProperty("session_id")
     private String sessionId;
-    @SerializedName("error_message")
+    @JsonProperty("error_message")
     private String errorMessage;
 
-    public OnMandatoryUpdateFailureEventContent(String sessionId, String errorMessage) {
+    public OnMandatoryUpdateFailureEventContent(@JsonProperty("session_id") String sessionId,
+                                                @JsonProperty("error_message") String errorMessage) {
         this.sessionId = sessionId;
         this.errorMessage = errorMessage;
     }

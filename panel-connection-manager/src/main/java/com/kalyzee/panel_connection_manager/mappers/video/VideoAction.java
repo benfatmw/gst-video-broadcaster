@@ -1,46 +1,63 @@
 package com.kalyzee.panel_connection_manager.mappers.video;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.kalyzee.panel_connection_manager.exceptions.InvalidRequestActionException;
 
 public enum VideoAction {
 
-    @SerializedName("start_record")
+    @JsonProperty("start_record")
     START_RECORD ("start_record"),
-    @SerializedName("stop_record")
+    @JsonProperty("on_record_failure")
+    ON_RECORD_FAILURE("on_record_failure"),
+    @JsonProperty("stop_record")
     STOP_RECORD ("stop_record"),
-    @SerializedName("start_live")
+    @JsonProperty("remove_record_by_id")
+    REMOVE_RECORD_BY_ID("remove_record_by_id"),
+    @JsonProperty("get_record_session_context")
+    GET_RECORD_SESSION_CONTEXT("get_record_session_context"),
+    @JsonProperty("start_live")
     START_LIVE ("start_live"),
-    @SerializedName("stop_live")
+    @JsonProperty("on_live_failure")
+    ON_LIVE_FAILURE("on_live_failure"),
+    @JsonProperty("stop_live")
     STOP_LIVE ("stop_live"),
-    @SerializedName("start_vod")
-    START_VOD ("start_vod"),
-    @SerializedName("stop_vod")
-    STOP_VOD ("stop_vod"),
-    @SerializedName("switch_scene")
+    @JsonProperty("upload_video_by_id")
+    UPLOAD_VIDEO_BY_ID("upload_video_by_id"),
+    @JsonProperty("get_upload_session_context")
+    GET_UPLOAD_SESSION_CONTEXT("get_upload_session_context"),
+    @JsonProperty("on_video_upload_progress")
+    ON_VIDEO_UPLOAD_PROGRESS("on_video_upload_progress"),
+    @JsonProperty("on_video_upload_success")
+    ON_VIDEO_UPLOAD_SUCCESS("on_video_upload_success"),
+    @JsonProperty("on_video_upload_failure")
+    ON_VIDEO_UPLOAD_FAILURE("on_video_upload_failure"),
+    @JsonProperty("switch_scene")
     SWITCH_SCENE ("switch_scene"),
-    @SerializedName("on_video_context_updated")
+    @JsonProperty("on_video_context_updated")
     ON_VIDEO_CONTEXT_UPDATED ("on_video_context_updated"),
-    @SerializedName("get_video_context")
+    @JsonProperty("get_video_context")
     GET_VIDEO_CONTEXT ("get_video_context"),
-    @SerializedName("create_webrtc_connection")
+    @JsonProperty("create_webrtc_connection")
     CREATE_WEBRTC_CONNECTION ("create_webrtc_connection");
 
     private String videoAction;
 
-    private VideoAction(String video_action) {
-        this.videoAction = video_action;
+    private VideoAction(String videoAction) {
+        this.videoAction = videoAction;
     }
 
     public String getString() {
         return videoAction;
     }
 
+    @JsonValue
     public static VideoAction value(String action) {
         for (VideoAction e : values()) {
             if (e.videoAction.equals(action)) {
                 return e;
             }
         }
-        throw new IllegalArgumentException();
+        throw new InvalidRequestActionException("Input action: " + action + " is not supported.");
     }
 }

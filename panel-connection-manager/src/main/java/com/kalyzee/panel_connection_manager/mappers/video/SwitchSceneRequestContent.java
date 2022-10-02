@@ -1,13 +1,14 @@
 package com.kalyzee.panel_connection_manager.mappers.video;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SwitchSceneRequestContent {
 
-    @SerializedName("id")
+    @JsonProperty("id")
     private int id;
 
-    public SwitchSceneRequestContent(int id) {
+    public SwitchSceneRequestContent(@JsonProperty("id") int id) {
         this.id = id;
     }
 

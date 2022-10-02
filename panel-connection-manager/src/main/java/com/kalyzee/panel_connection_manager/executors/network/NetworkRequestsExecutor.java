@@ -3,7 +3,10 @@ package com.kalyzee.panel_connection_manager.executors.network;
 import static com.kalyzee.panel_connection_manager.mappers.ResponseType.ERROR;
 import static com.kalyzee.panel_connection_manager.mappers.ResponseType.SUCCESS;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kalyzee.kontroller_services_api.interfaces.ContextChangedListener;
 import com.kalyzee.kontroller_services_api.interfaces.network.NetworkSettingManager;
 import com.kalyzee.panel_connection_manager.executors.PanelRequestsExecutor;
@@ -24,20 +27,27 @@ public class NetworkRequestsExecutor implements PanelRequestsExecutor {
     }
 
     @Override
-    public JSONObject execute(String action, Object action_content) throws JSONException {
-        Gson gson = new Gson();
-        String gson_response;
+    public JSONObject execute(String action, Object action_content) throws JSONException, JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        String gsonResponse;
         try {
-            Object response_content = null;
             switch (NetworkAction.value(action)) {
                 case GET_INFORMATION:
-                    return new JSONObject(gson.toJson(new ResponseObject<Object>(SUCCESS, null, null, networkSettingManager.getInformation())));
+                    return new JSONObject(
+                            objectMapper.writeValueAsString(
+                                    new ResponseObject<Object>(SUCCESS, null, null,
+                                            networkSettingManager.getInformation())));
             }
-            gson_response = gson.toJson(new ResponseObject<Object>(SUCCESS, null, null, response_content));
+            gsonResponse = objectMapper.writeValueAsString(
+                    new ResponseObject<Object>(SUCCESS, null, null, null));
         } catch (Exception e) {
-            gson_response = gson.toJson(new ResponseObject<ErrorResponseContent>(ERROR, null, null, new ErrorResponseContent(ExceptionUtils.getStackTrace(e))));
+            gsonResponse = objectMapper.writeValueAsString(
+                    new ResponseObject<ErrorResponseContent>(ERROR, null, null,
+                            new ErrorResponseContent(ExceptionUtils.getStackTrace(e))));
         }
-        return new JSONObject(gson_response);
+        return new JSONObject(gsonResponse);
     }
 
     @Override

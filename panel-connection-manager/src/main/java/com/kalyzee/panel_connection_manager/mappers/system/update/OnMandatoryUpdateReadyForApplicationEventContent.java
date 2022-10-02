@@ -1,13 +1,13 @@
 package com.kalyzee.panel_connection_manager.mappers.system.update;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class OnMandatoryUpdateReadyForApplicationEventContent {
 
-    @SerializedName("session_id")
+    @JsonProperty("session_id")
     private String sessionId;
 
-    public OnMandatoryUpdateReadyForApplicationEventContent(String sessionId) {
+    public OnMandatoryUpdateReadyForApplicationEventContent(@JsonProperty("session_id") String sessionId) {
         this.sessionId = sessionId;
     }
 

@@ -1,5 +1,6 @@
 package com.kalyzee.panel_connection_manager.executors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kalyzee.kontroller_services_api.interfaces.ContextChangedListener;
 
 import org.json.JSONException;
@@ -7,9 +8,9 @@ import org.json.JSONObject;
 
 public interface PanelRequestsExecutor {
 
-    public JSONObject execute(String action, Object action_content) throws JSONException;
+    JSONObject execute(String action, Object actionContent) throws JSONException, JsonProcessingException;
 
-    public void registerEventListener(ContextChangedListener listener);
+    void registerEventListener(ContextChangedListener listener);
 
-    public void unregisterEventListener(ContextChangedListener listener);
+    void unregisterEventListener(ContextChangedListener listener);
 }

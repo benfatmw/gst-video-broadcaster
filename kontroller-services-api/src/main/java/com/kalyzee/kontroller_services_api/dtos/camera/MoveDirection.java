@@ -1,29 +1,30 @@
 package com.kalyzee.kontroller_services_api.dtos.camera;
 
-
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum MoveDirection {
 
-    @SerializedName("up")
+    @JsonProperty("up")
     UP("up"),
-    @SerializedName("down")
+    @JsonProperty("down")
     DOWN("down"),
-    @SerializedName("left")
+    @JsonProperty("left")
     LEFT("left"),
-    @SerializedName("right")
+    @JsonProperty("right")
     RIGHT("right");
 
     private String moveDirection;
 
-    private MoveDirection(String move_direction) {
-        this.moveDirection = move_direction;
+    private MoveDirection(String moveDirection) {
+        this.moveDirection = moveDirection;
     }
 
     public String getString() {
         return moveDirection;
     }
 
+    @JsonValue
     public static MoveDirection value(String action) {
         for (MoveDirection e : values()) {
             if (e.moveDirection.equals(action)) {

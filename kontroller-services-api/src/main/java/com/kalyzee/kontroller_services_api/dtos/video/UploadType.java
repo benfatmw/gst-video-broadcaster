@@ -1,13 +1,14 @@
 package com.kalyzee.kontroller_services_api.dtos.video;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum UploadType {
 
-    @SerializedName("FTP")
+    @JsonProperty("FTP")
     FTP("FTP"),
-
-    @SerializedName("SFTP")
+    @JsonProperty("SFTP")
     SFTP("SFTP");
 
     private String uploadType;
@@ -20,6 +21,7 @@ public enum UploadType {
         return uploadType;
     }
 
+    @JsonValue
     public static UploadType value(String type) {
         for (UploadType e : values()) {
             if (e.uploadType.equals(type)) {

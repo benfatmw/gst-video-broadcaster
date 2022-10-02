@@ -29,7 +29,10 @@ dependencies {
 
     api project(path: ':kontroller-services-api')
     implementation 'io.socket:socket.io-client:2.0.1'
-    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.squareup.retrofit2:converter-jackson:2.7.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.11.1'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.11.1'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.11.1'
     implementation 'org.apache.commons:commons-lang3:3.6'
     api 'androidx.security:security-crypto:1.0.0-rc02'
     testImplementation 'junit:junit:4.+'

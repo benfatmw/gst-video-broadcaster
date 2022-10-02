@@ -1,20 +1,25 @@
 package com.kalyzee.kontroller_services_api.dtos.network;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class NetworkInformation {
-    @SerializedName("ip")
+    @JsonProperty("ip")
     private String ip;
-    @SerializedName("mac")
+    @JsonProperty("mac")
     private String mac;
-    @SerializedName("netmask")
+    @JsonProperty("netmask")
     private String netmask;
-    @SerializedName("gateway")
+    @JsonProperty("gateway")
     private String gateway;
-    @SerializedName("dns")
+    @JsonProperty("dns")
     private String dns;
 
-    public NetworkInformation(String ip, String mac, String netmask, String gateway, String dns) {
+    public NetworkInformation(@JsonProperty("ip") String ip,
+                              @JsonProperty("mac") String mac,
+                              @JsonProperty("netmask") String netmask,
+                              @JsonProperty("gateway") String gateway,
+                              @JsonProperty("dns") String dns) {
         this.ip = ip;
         this.mac = mac;
         this.netmask = netmask;

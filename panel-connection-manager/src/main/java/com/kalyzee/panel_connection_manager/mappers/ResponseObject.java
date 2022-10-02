@@ -1,22 +1,25 @@
 package com.kalyzee.panel_connection_manager.mappers;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ResponseObject <T> {
+public class ResponseObject<T> {
 
-    @SerializedName("type")
+    @JsonProperty("type")
     private ResponseType type;
-    @SerializedName("correlation_id")
+    @JsonProperty("correlation_id")
     private String correlationId;
-    @SerializedName("auth_token")
+    @JsonProperty("auth_token")
     private String authToken;
-    @SerializedName("content")
+    @JsonProperty("content")
     private T content;
 
-    public ResponseObject(ResponseType type, String correlation_id, String auth_token, T content) {
+    public ResponseObject(@JsonProperty("type") ResponseType type,
+                          @JsonProperty("correlation_id") String correlationId,
+                          @JsonProperty("auth_token") String authToken,
+                          @JsonProperty("content") T content) {
         this.type = type;
-        this.correlationId = correlation_id;
-        this.authToken = auth_token;
+        this.correlationId = correlationId;
+        this.authToken = authToken;
         this.content = content;
     }
 
@@ -24,16 +27,16 @@ public class ResponseObject <T> {
         this.type = type;
     }
 
-    public void setCorrelationId(String correlation_id) {
-        this.correlationId = correlation_id;
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
     }
 
     public void setContent(T content) {
         this.content = content;
     }
 
-    public void setAuthToken(String auth_token) {
-        this.authToken = auth_token;
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
     }
 
     public String getCorrelationId() {

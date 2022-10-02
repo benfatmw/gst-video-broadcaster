@@ -1,17 +1,20 @@
 package com.kalyzee.panel_connection_manager.mappers;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class EventObject<T1, T2> {
 
-    @SerializedName("category")
+    @JsonProperty("category")
     private RequestCategory category;
-    @SerializedName("action")
+    @JsonProperty("action")
     private T1 action;
-    @SerializedName("content")
+    @JsonProperty("content")
     private T2 content;
 
-    public EventObject(RequestCategory category, T1 action, T2 content) {
+    public EventObject(@JsonProperty("category") RequestCategory category,
+                       @JsonProperty("action") T1 action,
+                       @JsonProperty("content") T2 content) {
         this.category = category;
         this.action = action;
         this.content = content;

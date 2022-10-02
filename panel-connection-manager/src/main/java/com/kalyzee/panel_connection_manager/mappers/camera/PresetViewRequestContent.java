@@ -1,13 +1,14 @@
 package com.kalyzee.panel_connection_manager.mappers.camera;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class PresetViewRequestContent {
 
-    @SerializedName("preset_id")
+    @JsonProperty("preset_id")
     private int presetId;
 
-    public PresetViewRequestContent(int presetId) {
+    public PresetViewRequestContent(@JsonProperty("preset_id") int presetId) {
         this.presetId = presetId;
     }
 

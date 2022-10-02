@@ -9,4 +9,18 @@
 
     <string name="hello_first_fragment">Hello first fragment</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <!-- Strings related to login -->
+    <string name="prompt_uri">URI</string>
+    <string name="prompt_password">Password</string>
+    <string name="prompt_room_id">Room Identifier</string>
+    <string name="prompt_device_id">Device Identifier</string>
+    <string name="action_register">Register</string>
+    <string name="action_register_short">Register</string>
+    <string name="registration_failed">"Registration failed"</string>
+    <string name="online_status">"Device is online"</string>
+    <string name="login_failed">"Device logging failed"</string>
+    <string name="logout_failed">"Device logout failed"</string>
+    <string name="offline_status">"Device is offline"</string>
+    <string name="login_button">Login</string>
+    <string name="logout_button">Logout</string>
 </resources>

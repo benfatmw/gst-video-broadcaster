@@ -1,19 +1,23 @@
 package com.kalyzee.kontroller_services_api.dtos.video;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class LiveProfile {
 
-    @SerializedName("url")
+    @JsonProperty("url")
     private String url;
-    @SerializedName("username")
+    @JsonProperty("username")
     private String username;
-    @SerializedName("password")
+    @JsonProperty("password")
     private String password;
-    @SerializedName("key")
+    @JsonProperty("key")
     private String key;
 
-    public LiveProfile(String url, String username, String password, String key) {
+    public LiveProfile(@JsonProperty("url") String url,
+                       @JsonProperty("username") String username,
+                       @JsonProperty("password") String password,
+                       @JsonProperty("key") String key) {
         this.url = url;
         this.username = username;
         this.password = password;

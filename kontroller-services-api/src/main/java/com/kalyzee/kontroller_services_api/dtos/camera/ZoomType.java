@@ -1,24 +1,25 @@
 package com.kalyzee.kontroller_services_api.dtos.camera;
 
-
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ZoomType {
-    @SerializedName("add")
+    @JsonProperty("add")
     ADD("add"),
-    @SerializedName("dec")
+    @JsonProperty("dec")
     DEC("dec");
 
     private String zoomType;
 
-    private ZoomType(String zoom_type) {
-        this.zoomType = zoom_type;
+    private ZoomType(String zoomType) {
+        this.zoomType = zoomType;
     }
 
     public String getString() {
         return zoomType;
     }
 
+    @JsonValue
     public static ZoomType value(String action) {
         for (ZoomType e : values()) {
             if (e.zoomType.equals(action)) {

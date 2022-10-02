@@ -2,7 +2,10 @@ package com.kalyzee.panel_connection_manager;
 
 import android.util.Log;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kalyzee.panel_connection_manager.executors.PanelRequestsExecutor;
 import com.kalyzee.panel_connection_manager.mappers.RequestObject;
 
@@ -33,6 +36,7 @@ public class PanelRequestsConsumer implements Runnable {
     private PanelRequestsExecutor networkRequestsExecutor;
     private PanelRequestsExecutor videoRequestsExecutor;
     private PanelRequestsExecutor systemRequestsExecutor;
+    private PanelRequestsExecutor adminRequestsExecutor;
 
     private volatile boolean looping = true;
 
@@ -40,13 +44,15 @@ public class PanelRequestsConsumer implements Runnable {
                                  PanelRequestsExecutor cameraRequestsExecutor,
                                  PanelRequestsExecutor networkRequestsExecutor,
                                  PanelRequestsExecutor videoRequestsExecutor,
-                                 PanelRequestsExecutor systemRequestsExecutor) {
+                                 PanelRequestsExecutor systemRequestsExecutor,
+                                 PanelRequestsExecutor adminRequestsExecutor) {
         this.requestsQueue = requestsQueue;
         this.socket = socket;
         this.cameraRequestsExecutor = cameraRequestsExecutor;
         this.networkRequestsExecutor = networkRequestsExecutor;
         this.videoRequestsExecutor = videoRequestsExecutor;
         this.systemRequestsExecutor = systemRequestsExecutor;
+        this.adminRequestsExecutor = adminRequestsExecutor;
     }
 
     @Override
@@ -81,15 +87,17 @@ public class PanelRequestsConsumer implements Runnable {
 
     private void process(Object request) {
 
-        Gson gson = new Gson();
-        JSONObject response_object = null;
-        RequestObject request_object = null;
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        JSONObject responseObject = null;
+        RequestObject requestObject = null;
 
         Log.i(TAG, PANEL_REQUEST_RECEIVED + (String) request.toString());
 
         /** Get Panel request and deserialize it using gson */
         try {
-            request_object = gson.fromJson((String) request.toString(), RequestObject.class);
+            requestObject = objectMapper.readValue((String) request.toString(), RequestObject.class);
         } catch (Exception e) {
             Log.e(TAG, FAILED_TO_DESERIALIZE_PANEL_REQUEST, e);
             return;
@@ -97,29 +105,37 @@ public class PanelRequestsConsumer implements Runnable {
 
         try {
             /** Dispatch the request to the appropriate executor based on the category field */
-            switch (request_object.getCategory()) {
+            switch (requestObject.getCategory()) {
+                case ADMIN:
+                    responseObject = adminRequestsExecutor.execute(requestObject.getAction().toString(),
+                            requestObject.getContent());
+                    break;
                 case VIDEO:
-                    response_object = videoRequestsExecutor.execute(request_object.getAction().toString(), request_object.getContent());
+                    responseObject = videoRequestsExecutor.execute(requestObject.getAction().toString(),
+                            requestObject.getContent());
                     break;
                 case NETWORK:
-                    response_object = networkRequestsExecutor.execute(request_object.getAction().toString(), request_object.getContent());
+                    responseObject = networkRequestsExecutor.execute(requestObject.getAction().toString(),
+                            requestObject.getContent());
                     break;
                 case CAMERA:
-                    response_object = cameraRequestsExecutor.execute(request_object.getAction().toString(), request_object.getContent());
+                    responseObject = cameraRequestsExecutor.execute(requestObject.getAction().toString(),
+                            requestObject.getContent());
                     break;
                 case SYSTEM:
-                    response_object = systemRequestsExecutor.execute(request_object.getAction().toString(), request_object.getContent());
+                    responseObject = systemRequestsExecutor.execute(requestObject.getAction().toString(),
+                            requestObject.getContent());
                     break;
                 default:
                     Log.e(TAG, UNSUPPORTED_REQUEST);
                     return;
             }
             /** Add the correlation id to #response_object */
-            response_object.put(CORRELATION_ID, request_object.getCorrelationId());
+            responseObject.put(CORRELATION_ID, requestObject.getCorrelationId());
             /** Send response to the panel */
-            socket.emit(CAMERA_MESSAGE, response_object);
-            Log.i(TAG, CAMERA_RESPONSE_SENT + response_object.toString() + ", socket id:" + socket.id());
-        } catch (JSONException e) {
+            socket.emit(CAMERA_MESSAGE, responseObject);
+            Log.i(TAG, CAMERA_RESPONSE_SENT + responseObject.toString() + ", socket id:" + socket.id());
+        } catch (JSONException | JsonProcessingException e) {
             Log.e(TAG, FAILED_TO_SERIALIZE_CAMERA_RESPONSE, e);
         }
 

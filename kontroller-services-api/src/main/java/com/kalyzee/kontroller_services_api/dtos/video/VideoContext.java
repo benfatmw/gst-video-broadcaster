@@ -1,38 +1,41 @@
 package com.kalyzee.kontroller_services_api.dtos.video;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class VideoContext {
 
-    @SerializedName("is_in_live")
+    @JsonProperty("is_in_live")
     private boolean isInLive;
-    @SerializedName("is_recording")
-    private boolean isRecording;
-    @SerializedName("live_started_at")
+    @JsonProperty("live_started_at")
     private long liveStartedAt;
-    @SerializedName("record_started_at")
+    @JsonProperty("record_state")
+    private String recordState;
+    @JsonProperty("record_started_at")
     private long recordStartedAt;
-    @SerializedName("current_scene")
+    @JsonProperty("record_stopped_at")
+    private long recordStoppedAt;
+    @JsonProperty("current_scene")
     private int currentScene;
-    @SerializedName("current_date")
-    private long currentDate;
 
-    public VideoContext(boolean isInLive, boolean isRecording, long liveStartedAt, long recordStartedAt, int currentScene, long currentDate) {
+    public VideoContext(@JsonProperty("is_in_live") boolean isInLive,
+                        @JsonProperty("live_started_at") long liveStartedAt,
+                        @JsonProperty("record_state") String recordState,
+                        @JsonProperty("record_started_at") long recordStartedAt,
+                        @JsonProperty("record_stopped_at") long recordStoppedAt,
+                        @JsonProperty("current_scene") int currentScene) {
         this.isInLive = isInLive;
-        this.isRecording = isRecording;
         this.liveStartedAt = liveStartedAt;
+        this.recordState = recordState;
         this.recordStartedAt = recordStartedAt;
+        this.recordStoppedAt = recordStoppedAt;
         this.currentScene = currentScene;
-        this.currentDate = currentDate;
     }
 
     public boolean isInLive() {
         return isInLive;
     }
 
-    public boolean isRecording() {
-        return isRecording;
-    }
 
     public long getLiveStartedAt() {
         return liveStartedAt;
@@ -46,16 +49,10 @@ public class VideoContext {
         return currentScene;
     }
 
-    public long getCurrentDate() {
-        return currentDate;
-    }
     public void setInLive(boolean inLive) {
         isInLive = inLive;
     }
 
-    public void setRecording(boolean recording) {
-        isRecording = recording;
-    }
 
     public void setLiveStartedAt(long liveStartedAt) {
         this.liveStartedAt = liveStartedAt;
@@ -69,7 +66,19 @@ public class VideoContext {
         this.currentScene = currentScene;
     }
 
-    public void setCurrentDate(long currentDate) {
-        this.currentDate = currentDate;
+    public String getRecordState() {
+        return recordState;
+    }
+
+    public void setRecordState(String recordState) {
+        this.recordState = recordState;
+    }
+
+    public long getRecordStoppedAt() {
+        return recordStoppedAt;
+    }
+
+    public void setRecordStoppedAt(long recordStoppedAt) {
+        this.recordStoppedAt = recordStoppedAt;
     }
 }

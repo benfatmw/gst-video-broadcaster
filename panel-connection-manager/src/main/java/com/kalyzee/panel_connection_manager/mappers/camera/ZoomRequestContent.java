@@ -1,14 +1,14 @@
 package com.kalyzee.panel_connection_manager.mappers.camera;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kalyzee.kontroller_services_api.dtos.camera.ZoomType;
 
 public class ZoomRequestContent {
 
-    @SerializedName("type")
+    @JsonProperty("type")
     private ZoomType type;
 
-    public ZoomRequestContent(ZoomType type) {
+    public ZoomRequestContent(@JsonProperty("type") ZoomType type) {
         this.type = type;
     }
 

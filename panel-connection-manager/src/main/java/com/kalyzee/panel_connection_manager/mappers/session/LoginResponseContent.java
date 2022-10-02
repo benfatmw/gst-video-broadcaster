@@ -1,18 +1,19 @@
 package com.kalyzee.panel_connection_manager.mappers.session;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class LoginResponseContent {
 
-    @SerializedName("auth_token")
+    @JsonProperty("auth_token")
     private String authToken;
 
-    public LoginResponseContent(String auth_token) {
-        this.authToken = auth_token;
+    public LoginResponseContent(@JsonProperty("auth_token") String authToken) {
+        this.authToken = authToken;
     }
 
-    public void setAuthToken(String auth_token) {
-        this.authToken = auth_token;
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
     }
 
     public String getAuthToken() {

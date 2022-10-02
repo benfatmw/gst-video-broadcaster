@@ -1,16 +1,18 @@
 package com.kalyzee.panel_connection_manager.mappers.video;
 
-import com.google.gson.annotations.SerializedName;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum WebrtcSignallingAction {
 
-    @SerializedName("start")
+    @JsonProperty("start")
     START("start"),
-    @SerializedName("sdp")
+    @JsonProperty("sdp")
     SDP("sdp"),
-    @SerializedName("iceCandidate")
+    @JsonProperty("iceCandidate")
     ICE_CANDIDATE("iceCandidate"),
-    @SerializedName("stop")
+    @JsonProperty("stop")
     STOP("stop");
 
     private String webrtcSignallingAction;
@@ -23,6 +25,7 @@ public enum WebrtcSignallingAction {
         return webrtcSignallingAction;
     }
 
+    @JsonValue
     public static WebrtcSignallingAction value(String action) {
         for (WebrtcSignallingAction e : values()) {
             if (e.webrtcSignallingAction.equals(action)) {

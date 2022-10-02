@@ -1,38 +1,41 @@
 package com.kalyzee.panel_connection_manager.mappers.camera;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.kalyzee.panel_connection_manager.exceptions.InvalidRequestActionException;
 
 public enum CameraAction {
 
-    @SerializedName("move")
+    @JsonProperty("move")
     MOVE("move"),
-    @SerializedName("stop_moving")
+    @JsonProperty("stop_moving")
     STOP_MOVING("stop_moving"),
-    @SerializedName("zoom")
+    @JsonProperty("zoom")
     ZOOM("zoom"),
-    @SerializedName("stop_zooming")
+    @JsonProperty("stop_zooming")
     STOP_ZOOMING("stop_zooming"),
-    @SerializedName("set_preset_view")
+    @JsonProperty("set_preset_view")
     SET_PRESET_VIEW("set_preset_view"),
-    @SerializedName("move_to_preset_view")
+    @JsonProperty("move_to_preset_view")
     MOVE_TO_PRESET_VIEW("move_to_preset_view");
 
     private String cameraAction;
 
-    private CameraAction(String camera_action) {
-        this.cameraAction = camera_action;
+    private CameraAction(String cameraAction) {
+        this.cameraAction = cameraAction;
     }
 
     public String getString() {
         return cameraAction;
     }
 
+    @JsonValue
     public static CameraAction value(String action) {
         for (CameraAction e : values()) {
             if (e.cameraAction.equals(action)) {
                 return e;
             }
         }
-        throw new IllegalArgumentException();
+        throw new InvalidRequestActionException("Input action: " + action + " is not supported.");
     }
 }

@@ -1,14 +1,13 @@
 package com.kalyzee.panel_connection_manager.mappers.video;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kalyzee.kontroller_services_api.dtos.video.LiveProfile;
-import com.kalyzee.kontroller_services_api.dtos.video.UploadProfile;
 
 public class StartLiveRequestContent {
-    @SerializedName("live_profile")
+    @JsonProperty("live_profile")
     private LiveProfile liveProfile;
 
-    public StartLiveRequestContent(LiveProfile liveProfile, boolean isUploadEnabled, UploadProfile uploadProfile) {
+    public StartLiveRequestContent(@JsonProperty("live_profile") LiveProfile liveProfile) {
         this.liveProfile = liveProfile;
     }
 
