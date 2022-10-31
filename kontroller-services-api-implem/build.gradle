@@ -28,6 +28,7 @@ android {
 dependencies {
     api project(path: ':kontroller-services-api')
     api project(path: ':panel-connection-manager')
+    api project(path: ':camera-stream-pipeline')
     implementation 'androidx.room:room-runtime:2.1.0'
     annotationProcessor 'androidx.room:room-compiler:2.1.0'
     implementation 'org.webrtc:google-webrtc:1.0.32006'

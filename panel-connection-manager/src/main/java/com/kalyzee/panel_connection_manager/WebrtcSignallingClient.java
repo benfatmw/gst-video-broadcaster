@@ -52,6 +52,7 @@ public abstract class WebrtcSignallingClient {
     private static final String FAILED_TO_DESERIALIZE_WEBRTC_SIGNALLING_SERVER_MESSAGE = "Failed to deserialize Webrtc signalling server message.";
     private static final String UNSUPPORTED_WEBRTC_SIGNALLING_REQUEST = "Unsupported Webrtc signalling request.";
     private static final String CAMERA_RESPONSE_SENT = "Camera response to webrtc signalling server: ";
+    private static final String CAMERA_MESSAGE_SENT = "Camera message sent to webrtc signalling server: ";
     private static final String FAILED_TO_SEND_SDP_OFFER_TO_SIGNALLING_SERVER = "Failed to send SDP offer to signalling server.";
     private static final String FAILED_TO_SEND_ICE_CANDIDATE_TO_SIGNALLING_SERVER = "Failed to send Ice candidate to signalling server.";
     private static final String FAILED_TO_SERIALIZE_WEBRTC_SIGNALLING_CAMERA_MESSAGE = "Failed to serialize webrtc signalling camera message.";
@@ -197,7 +198,10 @@ public abstract class WebrtcSignallingClient {
         try {
             RequestObject<WebrtcSignallingAction, SdpContent> sdpOffer = new RequestObject<WebrtcSignallingAction, SdpContent>(null,
                     SDP, sdp, null, null);
-            remoteSocket.emit(WEBRTC_MESSAGE, new JSONObject(objectMapper.writeValueAsString(sdpOffer)));
+            JSONObject responseObject = new JSONObject(objectMapper.writeValueAsString(sdpOffer));
+            remoteSocket.emit(WEBRTC_MESSAGE, responseObject);
+            Log.i(TAG, CAMERA_MESSAGE_SENT + responseObject.toString() + ", socket id: "
+                    + remoteSocket.id());
         } catch (Exception e) {
             Log.e(TAG, FAILED_TO_SEND_SDP_OFFER_TO_SIGNALLING_SERVER + e);
         }
@@ -208,9 +212,12 @@ public abstract class WebrtcSignallingClient {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {
-            RequestObject<WebrtcSignallingAction, IceCandidateContent> sdpOffer = new RequestObject<WebrtcSignallingAction, IceCandidateContent>(null,
+            RequestObject<WebrtcSignallingAction, IceCandidateContent> iceCandidate = new RequestObject<WebrtcSignallingAction, IceCandidateContent>(null,
                     ICE_CANDIDATE, ice, null, null);
-            remoteSocket.emit(WEBRTC_MESSAGE, new JSONObject(objectMapper.writeValueAsString(sdpOffer)));
+            JSONObject responseObject = new JSONObject(objectMapper.writeValueAsString(iceCandidate));
+            remoteSocket.emit(WEBRTC_MESSAGE, responseObject);
+            Log.i(TAG, CAMERA_MESSAGE_SENT + responseObject.toString() + ", socket id: "
+                    + remoteSocket.id());
         } catch (Exception e) {
             Log.e(TAG, FAILED_TO_SEND_ICE_CANDIDATE_TO_SIGNALLING_SERVER + e);
         }

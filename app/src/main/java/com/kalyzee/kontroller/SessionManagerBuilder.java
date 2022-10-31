@@ -1,8 +1,6 @@
 package com.kalyzee.kontroller;
 
 
-import static org.webrtc.ContextUtils.getApplicationContext;
-
 import android.content.Context;
 import android.os.Build;
 
@@ -29,6 +27,7 @@ import com.kalyzee.kontroller_services_api_implem.system.update.install.UpdateIn
 import com.kalyzee.kontroller_services_api_implem.system.update.mandatory.MandatoryUpdateManager;
 import com.kalyzee.kontroller_services_api_implem.system.update.silent.ScheduledUpdateManager;
 import com.kalyzee.kontroller_services_api_implem.system.update.silent.SilentUpdateStateListener;
+import com.kalyzee.kontroller_services_api_implem.video.VideoManagerGstImplem;
 import com.kalyzee.kontroller_services_api_implem.video.VideoManagerImplem;
 import com.kalyzee.panel_connection_manager.CredentialsManager;
 import com.kalyzee.panel_connection_manager.Session;
@@ -40,7 +39,7 @@ import com.kalyzee.panel_connection_manager.executors.system.SystemRequestsExecu
 import com.kalyzee.panel_connection_manager.executors.video.VideoRequestsExecutor;
 import com.kalyzee.panel_connection_manager.utils.SocketSSLBuilder;
 
-import org.webrtc.PeerConnectionFactory;
+import org.freedesktop.gstreamer.pipeline.CameraStreamPipeline;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -70,7 +69,9 @@ public class SessionManagerBuilder {
     private AdminRequestsExecutor adminRequestsExecutor;
 
     private CameraManagerImplem cameraManager;
-    private VideoManagerImplem videoManager;
+    //private VideoManagerImplem videoManager;
+    private VideoManagerGstImplem videoManager;
+    private CameraStreamPipeline cameraStreamPipeline;
     private SystemManagerImplem systemManager;
     private NetworkSettingManagerImplem networkSettingsManager;
     private AdminManager adminManager;
@@ -105,7 +106,14 @@ public class SessionManagerBuilder {
 
         /** Instantiate managers */
         cameraManager = new CameraManagerImplem();
-        videoManager = new VideoManagerImplem(context);
+        //videoManager = new VideoManagerImplem(context);
+        cameraStreamPipeline = new CameraStreamPipeline(context);
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        videoManager = new VideoManagerGstImplem(context, cameraStreamPipeline);
         networkSettingsManager = new NetworkSettingManagerImplem(context);
         systemManager = new SystemManagerImplem();
         adminManager = new AdminManagerImplem(credentialsManager);
