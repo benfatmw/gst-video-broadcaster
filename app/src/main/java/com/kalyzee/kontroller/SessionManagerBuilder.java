@@ -38,6 +38,7 @@ import com.kalyzee.panel_connection_manager.executors.network.NetworkRequestsExe
 import com.kalyzee.panel_connection_manager.executors.system.SystemRequestsExecutor;
 import com.kalyzee.panel_connection_manager.executors.video.VideoRequestsExecutor;
 import com.kalyzee.panel_connection_manager.utils.SocketSSLBuilder;
+import com.kalyzee.visca_over_ip.ViscaCamera;
 
 import org.freedesktop.gstreamer.pipeline.CameraStreamPipeline;
 
@@ -68,6 +69,7 @@ public class SessionManagerBuilder {
     private SystemRequestsExecutor systemRequestsExecutor;
     private AdminRequestsExecutor adminRequestsExecutor;
 
+    private ViscaCamera viscaCamera;
     private CameraManagerImplem cameraManager;
     //private VideoManagerImplem videoManager;
     private VideoManagerGstImplem videoManager;
@@ -105,7 +107,8 @@ public class SessionManagerBuilder {
                 AppDatabase.class, "app-database").build();
 
         /** Instantiate managers */
-        cameraManager = new CameraManagerImplem();
+        viscaCamera = new ViscaCamera( "192.168.2.166", 45678);
+        cameraManager = new CameraManagerImplem(viscaCamera);
         //videoManager = new VideoManagerImplem(context);
         cameraStreamPipeline = new CameraStreamPipeline(context);
         try {
