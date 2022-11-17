@@ -33,6 +33,7 @@ import org.webrtc.DefaultVideoEncoderFactory;
 import org.webrtc.PeerConnectionFactory;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -60,6 +61,8 @@ public class VideoManagerGstImplem implements VideoManager {
     private static final String CREATE_WEBRTC_FEEDBACK_CONNECTION = "Create webrtc feedback connection.";
 
     private static final String FAILED_TO_CREATE_WEBRTC_FEEDBACK_CONNECTION = "Failed to create webrtc feedback connection.";
+    private static final String FAILED_TO_START_LIVE = "Failed to start live.";
+    private static final String FAILED_TO_STOP_LIVE = "Failed to stop live.";
 
     private final Context context;
     private final CameraStreamPipeline cameraStreamPipeline;
@@ -98,13 +101,27 @@ public class VideoManagerGstImplem implements VideoManager {
     }
 
     @Override
-    public void startLive(LiveProfile liveProfile) throws StartLiveFailureException {
-        Log.i(TAG, START_LIVE);
+    public int startLive(LiveProfile liveProfile) throws StartLiveFailureException {
+        try {
+            Log.i(TAG, START_LIVE);
+            int id = (int) (new Date().getTime()/1000);
+            cameraStreamPipeline.startStream(id, liveProfile);
+            return id;
+        } catch (Exception e) {
+            /** Catch exception and wrap it in #StartLiveFailureException. */
+            throw new StartLiveFailureException(FAILED_TO_START_LIVE, e);
+        }
     }
 
     @Override
-    public void stopLive() throws StopLiveFailureException {
-        Log.i(TAG, STOP_LIVE);
+    public void stopLive(int id) throws StopLiveFailureException {
+        try {
+            Log.i(TAG, STOP_LIVE);
+            cameraStreamPipeline.stopStream(id);
+        } catch (Exception e) {
+            /** Catch exception and wrap it in #StopLiveFailureException. */
+            throw new StopLiveFailureException(FAILED_TO_STOP_LIVE, e);
+        }
     }
 
     @Override

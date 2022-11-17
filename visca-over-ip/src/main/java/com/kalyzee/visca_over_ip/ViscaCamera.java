@@ -39,7 +39,7 @@ public class ViscaCamera {
     private static byte[] PRESET_CALL_CMD = new byte[]{(byte) 0x81, (byte) 0x01, (byte) 0x04,
             (byte) 0x3F, (byte) 0x02, (byte) 0XFF, (byte) 0xFF};
 
-    private static byte[] NO_REPLY_HEADER = new byte[]{(byte) 0x01, (byte) 0x00,  (byte) 0x00};
+    private static byte[] NO_REPLY_HEADER = new byte[]{(byte) 0x82, (byte) 0x00};
 
     public ViscaCamera(String address, int port) throws SocketException, UnknownHostException {
         this.socket = new DatagramSocket();
@@ -64,6 +64,7 @@ public class ViscaCamera {
                 sendCommand(PAN_TILT_RIGHT_CMD);
                 break;
         }
+        sendCommand(packet);
     }
 
     public void stopMoving() throws IOException {
@@ -80,6 +81,7 @@ public class ViscaCamera {
                 sendCommand(ZOOM_DEC_CMD);
                 break;
         }
+        sendCommand(packet);
     }
 
     public void stopZooming() throws IOException {
@@ -94,10 +96,23 @@ public class ViscaCamera {
     public void moveToPresetView(int presetId) throws IOException {
         PRESET_CALL_CMD[PRESET_SET_CMD.length-2]= (byte) presetId;
         sendCommand(PRESET_CALL_CMD);
+
     }
 
+    /**
+     * According to the documentation:
+     * |------packet (3-16 bytes)---------|
+     * header     message      terminator
+     * (1 byte)  (1-14 bytes)  (1 byte)
+     * | X | X . . . . .  . . . . . X | X |
+     * header:                  terminator:
+     * 1 s2 s1 s0 0 r2 r1 r0     0xff
+     * with r,s = recipient, sender msb first
+     * for broadcast the header is 0x88!
+     * we use -1 as recipient to send a broadcast!
+     */
     public byte[] sendCommand(byte[] cmd) throws IOException {
-        NO_REPLY_HEADER[NO_REPLY_HEADER.length-1] = (byte) cmd.length;
+
         byte[] buf = new byte[NO_REPLY_HEADER.length + cmd.length];
         System.arraycopy(NO_REPLY_HEADER, 0, buf, 0, NO_REPLY_HEADER.length);
         System.arraycopy(cmd, 0, buf, NO_REPLY_HEADER.length, cmd.length);

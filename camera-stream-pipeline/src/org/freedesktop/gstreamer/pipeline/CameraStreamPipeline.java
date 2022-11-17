@@ -3,6 +3,8 @@ package org.freedesktop.gstreamer.pipeline;
 import android.content.Context;
 import android.util.Log;
 
+import com.kalyzee.kontroller_services_api.dtos.video.LiveProfile;
+
 import org.freedesktop.gstreamer.GStreamer;
 
 import java.util.HashMap;
@@ -27,6 +29,10 @@ public class CameraStreamPipeline {
     private native void nativeSetRemoteDescription(int id, String type, String sdp);
 
     private native void nativeAddIceCandidate(int id, int sdpMLineIndex, String candidate);
+
+    private native void nativeStartStream(int id, LiveProfile liveProfile);
+
+    private native void nativeStopStream(int id);
 
     private long nativeCustomData;      // Native code will use this to keep private data
 
@@ -64,6 +70,14 @@ public class CameraStreamPipeline {
 
     public void addIceCandidate(int id, int sdpMLineIndex, String candidate) {
         nativeAddIceCandidate(id, sdpMLineIndex, candidate);
+    }
+
+    public void startStream(int id, LiveProfile liveProfile) {
+        nativeStartStream(id, liveProfile);
+    }
+
+    public void stopStream(int id) {
+        nativeStopStream(id);
     }
 
     /**

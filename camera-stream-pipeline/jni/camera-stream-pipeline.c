@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include "gstwebrtcfeedbackbin.h"
 #include "camerasrcbin.h"
+#include "gstlivepublisherbin.h"
 
 GST_DEBUG_CATEGORY_STATIC (debug_category);
 #define GST_CAT_DEFAULT debug_category
@@ -21,13 +22,13 @@ GST_DEBUG_CATEGORY_STATIC (debug_category);
 # define SET_CUSTOM_DATA(env, thiz, fieldID, data) (*env)->SetLongField (env, thiz, fieldID, (jlong)(jint)data)
 #endif
 
-const gchar *priv_gst_dump_dot_dir = NULL;
 
 /** Structure to contain all our information, so we can pass it to callbacks */
 typedef struct _CustomData {
     jobject app;                  /* Application instance, used to call its methods. A global reference is kept. */
     GstElement *pipeline;         /* The running pipeline */
-    GstElement *webrtc_feedback_bin;         /* The running pipeline */
+    GstElement *webrtc_feedback_bin;
+    GstElement *live_publisher_bin;
     GMainContext *context;        /* GLib context used to run the main loop */
     GMainLoop *main_loop;         /* GLib main loop */
     gboolean initialized;         /* To avoid informing the UI multiple times about the initialization */
@@ -42,11 +43,13 @@ static jmethodID on_ice_candidate_method_id;
 static jmethodID on_sdp_created_method_id;
 static jmethodID on_gstreamer_initialized_method_id;
 
-extern guint gst_webrtc_feedback_bin_signals[LAST_SIGNAL];
+extern guint gst_webrtc_feedback_bin_signals[LAST_WEBRTC_FEEDBACK_SIGNAL];
+extern guint gst_live_publisher_bin_signals[LAST_LIVE_PUBLISHER_SIGNAL];
 
-static const gchar *launch_string_template = "rtspsrc location=%s  udp-buffer-size=262144 !"
-                                             "rtpjitterbuffer mode=0 !  rtph264depay ! h264parse ! rtph264pay config-interval=1 timestamp-offset=0 ! application/x-rtp,media=video,encoding-name=H264,payload=96 !"
-                                             " queue ! webrtcfeedbackbin name=webrtc_feedback_bin";
+static const gchar *launch_string_template = "rtspsrc location=%s latency=0 ! rtpjitterbuffer mode=0 ! rtph264depay ! h264parse"
+                                             "! tee name=v_tee ! webrtcfeedbackbin name=webrtc_feedback_bin"
+                                             "  "
+                                             "v_tee. ! livepublisherbin name=live_publisher_bin";
 
 static void
 on_sdp_created_handler(G_GNUC_UNUSED GstElement *webrtcfeedbackbin, gint id, gchar *type,
@@ -158,7 +161,7 @@ app_function(void *userdata) {
     GError *error = NULL;
 
     webrtc_feedback_bin_init(NULL);
-    gst_camera_src_bin_plugin_init(NULL);
+    live_publisher_bin_init(NULL);
 
     GST_DEBUG ("Creating pipeline in CustomData at %p", data);
 
@@ -185,6 +188,9 @@ app_function(void *userdata) {
 
     g_signal_connect (data->webrtc_feedback_bin, "on-ice-candidate",
                       G_CALLBACK(on_ice_candidate_handler), (gpointer) data);
+
+    data->live_publisher_bin =  gst_bin_get_by_name(GST_BIN (data->pipeline),
+                                                    "live_publisher_bin");
 
     /** Instruct the bus to emit signals for each received message, and connect to the interesting signals */
     bus = gst_element_get_bus(data->pipeline);
@@ -270,7 +276,7 @@ gst_native_init(JNIEnv *env, jobject thiz) {
     gst_debug_set_threshold_for_name("camera-stream-pipeline", GST_LEVEL_DEBUG);
     gst_debug_set_threshold_for_name("webrtc*", GST_LEVEL_INFO);
     //gst_debug_set_threshold_for_name("*", GST_LEVEL_INFO);
-    //gst_debug_set_threshold_for_name("rtsp*", GST_LEVEL_INFO);
+    gst_debug_set_threshold_for_name("rtmp*", GST_LEVEL_DEBUG);
     GST_DEBUG ("Created CustomData at %p", data);
     data->app = (*env)->NewGlobalRef(env, thiz);
     GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
@@ -424,18 +430,118 @@ gst_native_add_ice_candidate(JNIEnv *env, jobject thiz, jint id, jint m_line_ind
                   0, id, m_line_index, candidate_str, &ret);
 }
 
+/** Live publisher stuff */
+static void
+gst_native_start_stream(JNIEnv *env, jobject thiz, jint id, jobject live_profile_object) {
+    gboolean ret;
+    const char *url_str = "";
+    const char *username_str = "";
+    const char *password_str = "";
+    const char *key_str = "";
+    CustomData *data = GET_CUSTOM_DATA(env, thiz, custom_data_field_id);
+    if (!data)
+        return;
+
+    /** Sanity checks */
+    if (!live_profile_object) {
+        jclass je = (*env)->FindClass(env, "java/lang/Exception");
+        (*env)->ThrowNew(env, je, "Failed to start stream. Null input live profile parameter.");
+        return;
+    }
+
+    /** Retrieve #LiveProfile methods ids */
+    jclass live_profile_class = (*env)->GetObjectClass(env, live_profile_object);
+    jmethodID get_url = (*env)->GetMethodID(env, live_profile_class, "getUrl",
+                                            "()Ljava/lang/String;");
+    jmethodID get_username = (*env)->GetMethodID(env, live_profile_class, "getUsername",
+                                                 "()Ljava/lang/String;");
+    jmethodID get_password = (*env)->GetMethodID(env, live_profile_class, "getPassword",
+                                                 "()Ljava/lang/String;");
+    jmethodID get_key = (*env)->GetMethodID(env, live_profile_class, "getKey",
+                                            "()Ljava/lang/String;");
+
+    if (!get_url || !get_username || !get_password || !get_key) {
+        jclass je = (*env)->FindClass(env, "java/lang/Exception");
+        (*env)->ThrowNew(env, je,
+                         "Failed to start stream. Failed to get all #LiveProfile class methods ids.");
+        return;
+    }
+
+    jstring j_url = (jstring) (*env)->CallObjectMethod(env, live_profile_object, get_url);
+    jstring j_username = (jstring) (*env)->CallObjectMethod(env, live_profile_object, get_username);
+    jstring j_password = (jstring) (*env)->CallObjectMethod(env, live_profile_object, get_password);
+    jstring j_key = (jstring) (*env)->CallObjectMethod(env, live_profile_object, get_key);
+
+    /** Convert the Java String to use it in C */
+    if (j_url) {
+        url_str = (*env)->GetStringUTFChars(env, j_url, 0);
+    }
+    if (j_username) {
+        username_str = (*env)->GetStringUTFChars(env, j_username, 0);
+    }
+    if (j_password) {
+        password_str = (*env)->GetStringUTFChars(env, j_password, 0);
+    }
+    if (j_key) {
+        key_str = (*env)->GetStringUTFChars(env, j_key, 0);
+    }
+
+    GST_DEBUG("Create a live profile (host, username, password, key) "
+              "VALUES (\"%s\", \"%s\", \"%s\",\"%s\")",
+              url_str, username_str, password_str, key_str);
+
+    char *full_url = g_strdup_printf("%s/%s", url_str, key_str);
+
+    g_signal_emit(data->live_publisher_bin, gst_live_publisher_bin_signals[START_STREAM_SIGNAL],
+                  0,
+                  id, full_url, username_str, password_str, &ret);
+
+    /** Release allocated resources */
+    if (j_url) {
+        (*env)->ReleaseStringUTFChars(env, j_url, url_str);
+    }
+    if (j_username) {
+        (*env)->ReleaseStringUTFChars(env, j_username, username_str);
+    }
+    if (j_password) {
+        (*env)->ReleaseStringUTFChars(env, j_password, password_str);
+    }
+    if (j_key) {
+        (*env)->ReleaseStringUTFChars(env, j_key, key_str);
+    }
+    if (live_profile_class) {
+        (*env)->DeleteLocalRef(env, live_profile_class);
+    }
+    g_free(full_url);
+}
+
+static void
+gst_native_stop_stream(JNIEnv *env, jobject thiz, jint id) {
+    gboolean ret;
+    CustomData *data = GET_CUSTOM_DATA(env, thiz, custom_data_field_id);
+    if (!data)
+        return;
+    g_signal_emit(data->live_publisher_bin, gst_live_publisher_bin_signals[STOP_STREAM_SIGNAL],
+                  0,
+                  id, &ret);
+}
+
+
 /** List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-        {"nativeInit",                 "()V",                                        (void *) gst_native_init},
-        {"nativePlay",                 "()V",                                        (void *) gst_native_play},
-        {"nativeFinalize",             "()V",                                        (void *) gst_native_finalize},
-        {"nativePause",                "()V",                                        (void *) gst_native_pause},
-        {"nativeClassInit",            "()Z",                                        (void *) gst_native_class_init},
+        {"nativeInit",                 "()V",                                                              (void *) gst_native_init},
+        {"nativePlay",                 "()V",                                                              (void *) gst_native_play},
+        {"nativeFinalize",             "()V",                                                              (void *) gst_native_finalize},
+        {"nativePause",                "()V",                                                              (void *) gst_native_pause},
+        {"nativeClassInit",            "()Z",                                                              (void *) gst_native_class_init},
 
-        {"nativeStartPreview",         "(I[Ljava/lang/String;[Ljava/lang/String;)J", (void *) gst_native_start_preview},
-        {"nativeStopPreview",          "(I)V",                                       (void *) gst_native_stop_preview},
-        {"nativeSetRemoteDescription", "(ILjava/lang/String;Ljava/lang/String;)V",   (void *) gst_native_set_remote_description},
-        {"nativeAddIceCandidate",      "(IILjava/lang/String;)V",                    (void *) gst_native_add_ice_candidate}
+        {"nativeStartStream",          "(ILcom/kalyzee/kontroller_services_api/dtos/video/LiveProfile;)V", (void *) gst_native_start_stream},
+        {"nativeStopStream",           "(I)V",                                                             (void *) gst_native_stop_stream},
+
+        {"nativeStartPreview",         "(I[Ljava/lang/String;[Ljava/lang/String;)J",                       (void *) gst_native_start_preview},
+        {"nativeStopPreview",          "(I)V",                                                             (void *) gst_native_stop_preview},
+        {"nativeSetRemoteDescription", "(ILjava/lang/String;Ljava/lang/String;)V",                         (void *) gst_native_set_remote_description},
+        {"nativeAddIceCandidate",      "(IILjava/lang/String;)V",                                          (void *) gst_native_add_ice_candidate}
 };
 
 /** Library initializer */

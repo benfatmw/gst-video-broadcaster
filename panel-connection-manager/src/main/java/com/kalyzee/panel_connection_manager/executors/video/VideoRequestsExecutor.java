@@ -18,7 +18,9 @@ import com.kalyzee.panel_connection_manager.mappers.video.GetRecordSessionContex
 import com.kalyzee.panel_connection_manager.mappers.video.GetUploadSessionContextRequestContent;
 import com.kalyzee.panel_connection_manager.mappers.video.RemoveRecordByIdRequestContent;
 import com.kalyzee.panel_connection_manager.mappers.video.StartLiveRequestContent;
+import com.kalyzee.panel_connection_manager.mappers.video.StartLiveResponseContent;
 import com.kalyzee.panel_connection_manager.mappers.video.StartRecordResponseContent;
+import com.kalyzee.panel_connection_manager.mappers.video.StopLiveRequestContent;
 import com.kalyzee.panel_connection_manager.mappers.video.StopRecordRequestContent;
 import com.kalyzee.panel_connection_manager.mappers.video.StopRecordResponseContent;
 import com.kalyzee.panel_connection_manager.mappers.video.SwitchSceneRequestContent;
@@ -33,6 +35,8 @@ import org.json.JSONObject;
 public class VideoRequestsExecutor implements PanelRequestsExecutor {
 
     private VideoManager videoManager;
+
+    private int lastStreamId;
 
     public VideoRequestsExecutor(VideoManager videoManager) {
         this.videoManager = videoManager;
@@ -72,10 +76,18 @@ public class VideoRequestsExecutor implements PanelRequestsExecutor {
                     StartLiveRequestContent startLiveParams = objectMapper.readValue(
                             objectMapper.writeValueAsString(actionContent),
                             StartLiveRequestContent.class);
-                    videoManager.startLive(startLiveParams.getLiveProfile());
+                    lastStreamId = videoManager.startLive(startLiveParams.getLiveProfile());
+                    responseContent = new StartLiveResponseContent(videoManager.startLive(startLiveParams.getLiveProfile()));
                     break;
                 case STOP_LIVE:
-                    videoManager.stopLive();
+                    StopLiveRequestContent stopLiveParams = objectMapper.readValue(
+                            objectMapper.writeValueAsString(actionContent),
+                            StopLiveRequestContent.class);
+                    if (stopLiveParams == null) {
+                        videoManager.stopLive(lastStreamId);
+                    } else {
+                        videoManager.stopLive(stopLiveParams.getSessionId());
+                    }
                     break;
                 case UPLOAD_VIDEO_BY_ID:
                     UploadVideoByIdRequestContent uploadVideoByIdParams = objectMapper.readValue(

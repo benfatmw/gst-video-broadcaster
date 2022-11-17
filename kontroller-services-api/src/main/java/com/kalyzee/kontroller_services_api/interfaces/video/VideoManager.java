@@ -29,9 +29,9 @@ public interface VideoManager {
 
     RecordSessionContext geRecordSessionContext(int sessionId) throws GetRecordSessionContextFailureException;
 
-    void startLive(LiveProfile liveProfile) throws StartLiveFailureException;
+    int startLive(LiveProfile liveProfile) throws StartLiveFailureException;
 
-    void stopLive() throws StopLiveFailureException;
+    void stopLive(int id) throws StopLiveFailureException;
 
     int uploadVideoById(int videoId, UploadProfile uploadProfile) throws UploadVideoFailureException;
 

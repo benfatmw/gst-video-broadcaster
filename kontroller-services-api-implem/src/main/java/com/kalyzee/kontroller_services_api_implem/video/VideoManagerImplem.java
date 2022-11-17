@@ -97,12 +97,13 @@ public class VideoManagerImplem implements VideoManager {
     }
 
     @Override
-    public void startLive(LiveProfile liveProfile) throws StartLiveFailureException {
+    public int startLive(LiveProfile liveProfile) throws StartLiveFailureException {
         Log.i(TAG, START_LIVE);
+        return 0;
     }
 
     @Override
-    public void stopLive() throws StopLiveFailureException {
+    public void stopLive(int id) throws StopLiveFailureException {
         Log.i(TAG, STOP_LIVE);
     }
 

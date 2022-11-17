@@ -3,7 +3,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := camera_stream_pipeline
-LOCAL_SRC_FILES := camera-stream-pipeline.c gstwebrtcfeedbackbin.c camerasrcbin.c
+LOCAL_SRC_FILES := camera-stream-pipeline.c gstwebrtcfeedbackbin.c camerasrcbin.c gstlivepublisherbin.c
 LOCAL_SHARED_LIBRARIES := gstreamer_android
 LOCAL_LDLIBS := -llog -landroid
 include $(BUILD_SHARED_LIBRARY)

@@ -67,5 +67,6 @@ afterEvaluate {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(path: ':kontroller-services-api')
     testImplementation 'junit:junit:4.12'
 }

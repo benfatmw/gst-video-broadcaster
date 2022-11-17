@@ -24,7 +24,7 @@
 GST_DEBUG_CATEGORY_STATIC (gst_webrtc_feedback_bin_debug);
 #define GST_CAT_DEFAULT gst_webrtc_feedback_bin_debug
 
-guint gst_webrtc_feedback_bin_signals[LAST_SIGNAL] = {0};
+guint gst_webrtc_feedback_bin_signals[LAST_WEBRTC_FEEDBACK_SIGNAL] = {0};
 
 /**
  * the capabilities of the inputs and outputs.
@@ -42,7 +42,7 @@ static GstStaticPadTemplate sink_video_factory =
                 "video_sink",
                 GST_PAD_SINK,
                 GST_PAD_ALWAYS,
-                GST_STATIC_CAPS("application/x-rtp"));
+                GST_STATIC_CAPS("video/x-h264"));
 
 static const gchar webrtcbin_video_caps_str[] =
         "application/x-rtp,media=video,encoding-name=H264,payload=96";
@@ -62,6 +62,9 @@ GST_ELEMENT_REGISTER_DEFINE (webrtcfeedbackbin, "webrtcfeedbackbin", GST_RANK_NO
 static void gst_webrtc_feedback_bin_set_property(GObject *object,
                                                  guint prop_id, const GValue *value,
                                                  GParamSpec *pspec);
+
+static void gst_webrtc_feedback_bin_get_property(GObject *object,
+                                                 guint prop_id, GValue *value, GParamSpec *pspec);
 
 static void destroy_receiver_entry(gpointer receiver_entry_ptr) {
 
@@ -287,19 +290,24 @@ gst_webrtc_feedback_bin_start_preview(Gstwebrtcfeedbackbin *self,
 
     audio_queue_name = g_strdup_printf("webrtc-audio-queue-%s", peer_id);
     webrtc_audio_queue = gst_element_factory_make("queue", audio_queue_name);
-    g_object_set(G_OBJECT (webrtc_audio_queue), "leaky", 2, NULL);
     g_free(audio_queue_name);
 
     video_queue_name = g_strdup_printf("webrtc-video-queue-%s", peer_id);
     webrtc_video_queue = gst_element_factory_make("queue", video_queue_name);
-    g_object_set(G_OBJECT (webrtc_video_queue), "leaky", 2, NULL);
     g_free(video_queue_name);
 
     webrtcbin = gst_element_factory_make("webrtcbin", peer_id);
+    if (!webrtcbin || !webrtc_video_queue || !webrtc_audio_queue) {
+        GST_ERROR_OBJECT(self, "Failed to create elements!");
+        return FALSE;
+    }
+
+    g_object_set(G_OBJECT (webrtc_video_queue), "leaky", 2, NULL);
     g_object_set(G_OBJECT (webrtc_audio_queue), "leaky", 2, NULL);
     /** Set bundle policy to max-bundle */
     g_object_set(G_OBJECT (webrtcbin), "bundle-policy",
                  GST_WEBRTC_BUNDLE_POLICY_MAX_BUNDLE, NULL);
+
     /** Set turn and stun servers */
     if (turns_array) {
         for (i = 0; i < turns_array->len; i++) {
@@ -387,32 +395,29 @@ gst_webrtc_feedback_bin_start_preview(Gstwebrtcfeedbackbin *self,
 
         goto add_peer_to_pipeline_cleanup;
     }*/
-    ret = gst_element_sync_state_with_parent(webrtc_video_queue);
-    if (!ret) {
-        GST_WARNING_OBJECT(self, "Failed to sync webrtc_video_queue with parent.");
+    if (!gst_element_sync_state_with_parent(webrtc_video_queue)) {
+        GST_ERROR_OBJECT(self, "Failed to sync webrtc_video_queue with parent.");
         goto gst_webrtc_feedback_bin_start_preview_cleanup;
     }
-    ret = gst_element_sync_state_with_parent(webrtcbin);
-    if (!ret) {
-        GST_WARNING_OBJECT(self, "Failed to sync webrtcbin with parent.");
+    if (!gst_element_sync_state_with_parent(webrtcbin)) {
+        GST_ERROR_OBJECT(self, "Failed to sync webrtcbin with parent.");
         goto gst_webrtc_feedback_bin_start_preview_cleanup;
     }
-    ret = gst_element_link_many(self->webrtc_video_tee, webrtc_video_queue, webrtcbin, NULL);
-    if (ret != TRUE) {
-        GST_WARNING_OBJECT(self,
+    if (!gst_element_link_many(self->webrtc_video_tee, webrtc_video_queue, webrtcbin, NULL)) {
+        GST_ERROR_OBJECT(self,
                            "Failed to link webrtc_video_tee -> webrtc_video_queue -> webrtcbin.");
         goto gst_webrtc_feedback_bin_start_preview_cleanup;
     }
     sleep(5);
     g_signal_emit_by_name(webrtcbin, "get-transceivers", &transceivers);
     if ((!transceivers) || transceivers->len <= 0) {
-        GST_WARNING_OBJECT(gst_object_get_parent(webrtcbin), "Failed to get webrtcbin transceivers.");
+        GST_ERROR_OBJECT(gst_object_get_parent(webrtcbin), "Failed to get webrtcbin transceivers.");
         return FALSE;
     }
     transceiver = g_array_index (transceivers, GstWebRTCRTPTransceiver *, 0);
     g_object_set(transceiver, "direction", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDONLY, NULL);
-    transceiver = g_array_index (transceivers, GstWebRTCRTPTransceiver *, 1);
-    g_object_set(transceiver, "direction", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDONLY, NULL);
+    //transceiver = g_array_index (transceivers, GstWebRTCRTPTransceiver *, 1);
+    //g_object_set(transceiver, "direction", GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDONLY, NULL);
     g_array_unref(transceivers);
 
     GST_INFO_OBJECT(self,
@@ -441,13 +446,14 @@ gst_webrtc_feedback_bin_start_preview_cleanup:
 
 static gboolean
 gst_webrtc_feedback_bin_stop_preview(Gstwebrtcfeedbackbin *self,
-                                     glong id) {
+                                     gint id) {
     gchar *audio_queue_name, *video_queue_name;
     gchar *peer_id;
     ReceiverEntry *receiver_entry;
     GstElement *webrtcbin, *webrtc_audio_queue, *webrtc_video_queue;
     GstPad *webrtc_audio_sink_pad, *webrtc_video_sink_pad,
             *webrtc_audio_tee_src_pad, *webrtc_video_tee_src_pad;
+    gboolean ret = TRUE;
 
     /** Sanity checks */
     if (!self) {
@@ -460,7 +466,7 @@ gst_webrtc_feedback_bin_stop_preview(Gstwebrtcfeedbackbin *self,
     }
     if (!g_hash_table_lookup_extended(self->receiver_entry_table, GINT_TO_POINTER(id), NULL,
                                       (gpointer *) &receiver_entry)) {
-        GST_WARNING_OBJECT(self, "Peer connection %d has not been opened.", id);
+        GST_WARNING_OBJECT(self, "Peer connection %d not recognized.", id);
         return FALSE;
 
     }
@@ -471,12 +477,16 @@ gst_webrtc_feedback_bin_stop_preview(Gstwebrtcfeedbackbin *self,
 
     webrtcbin = gst_bin_get_by_name(GST_BIN (self), peer_id);
     if (!webrtcbin) {
-        GST_WARNING_OBJECT(self,
-                           "webrtcbin-%d is not found in webrtc feedback pipeline.", id);
+        GST_ERROR_OBJECT(self,
+                         "webrtcbin-%d is not found in webrtc feedback pipeline.", id);
+        ret = FALSE;
         goto gst_webrtc_feedback_bin_stop_preview_cleanup;
     }
-    gst_bin_remove(GST_BIN (self), webrtcbin);
-
+    if(!gst_bin_remove(GST_BIN (self), webrtcbin)) {
+        GST_ERROR_OBJECT(self, "Failed to remove webrtcbin.");
+        ret = FALSE;
+        goto gst_webrtc_feedback_bin_stop_preview_cleanup;
+    }
     /*
     audio_queue_name = g_strdup_printf("webrtc-audio-queue-%s", peer_id);
     webrtc_audio_queue = gst_bin_get_by_name(GST_BIN (self),
@@ -519,9 +529,10 @@ gst_webrtc_feedback_bin_stop_preview(Gstwebrtcfeedbackbin *self,
     webrtc_video_queue = gst_bin_get_by_name(GST_BIN (self),
                                              video_queue_name);
     if (!webrtc_video_queue) {
-        GST_WARNING_OBJECT(self, "Failed to get webrtc_video_queue.");
+        GST_ERROR_OBJECT(self, "Failed to get webrtc_video_queue.");
         g_free(video_queue_name);
         g_free(peer_id);
+        ret = FALSE;
         goto gst_webrtc_feedback_bin_stop_preview_cleanup;
     }
     g_free(video_queue_name);
@@ -529,18 +540,24 @@ gst_webrtc_feedback_bin_stop_preview(Gstwebrtcfeedbackbin *self,
 
     webrtc_video_sink_pad = gst_element_get_static_pad(webrtc_video_queue, "sink");
     if (!webrtc_video_sink_pad) {
-        GST_WARNING_OBJECT(self, "Failed to get webrtc_video_sink_pad.");
+        GST_ERROR_OBJECT(self, "Failed to get webrtc_video_sink_pad.");
+        ret = FALSE;
         goto gst_webrtc_feedback_bin_stop_preview_cleanup;
     }
 
     webrtc_video_tee_src_pad = gst_pad_get_peer(webrtc_video_sink_pad);
     if (!webrtc_video_tee_src_pad) {
-        GST_WARNING_OBJECT(self, "Failed to get webrtc_video_tee_src_pad.");
+        GST_ERROR_OBJECT(self, "Failed to get webrtc_video_tee_src_pad.");
+        ret = FALSE;
         goto gst_webrtc_feedback_bin_stop_preview_cleanup;
     }
     gst_object_unref(GST_OBJECT(webrtc_video_sink_pad));
 
-    gst_bin_remove(GST_BIN (self), webrtc_video_queue);
+    if(!gst_bin_remove(GST_BIN (self), webrtc_video_queue)) {
+        GST_ERROR_OBJECT(self, "Failed to remove webrtc_video_queue.");
+        ret = FALSE;
+        goto gst_webrtc_feedback_bin_stop_preview_cleanup;
+    }
 
     gst_element_release_request_pad(self->webrtc_video_tee, webrtc_video_tee_src_pad);
     gst_object_unref(GST_OBJECT(webrtc_video_tee_src_pad));
@@ -554,11 +571,8 @@ gst_webrtc_feedback_bin_stop_preview_cleanup:
                     g_hash_table_size(self->receiver_entry_table));
     g_mutex_unlock(&receiver_entry->mutex);
 
-    return TRUE;
+    return ret;
 }
-
-static void gst_webrtc_feedback_bin_get_property(GObject *object,
-                                                 guint prop_id, GValue *value, GParamSpec *pspec);
 
 /** GObject vmethod implementations */
 
@@ -642,16 +656,23 @@ static void
 gst_webrtc_feedback_bin_init(Gstwebrtcfeedbackbin *self) {
 
     gboolean ret = FALSE;
+    GstElement *v_queue, *v_rtph264pay;
 
     self->max_webrtc_sessions = DEFAULT_MAX_SESSIONS;
     self->receiver_entry_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL,
                                                        destroy_receiver_entry);
+
+    v_rtph264pay = gst_element_factory_make("rtph264pay", "v_rtph264pay");
+    v_queue = gst_element_factory_make("queue", "v_queue");
     self->webrtc_video_tee = gst_element_factory_make("tee", "webrtc_video_tee");
-    if (!self->webrtc_video_tee) {
-        GST_ERROR_OBJECT(self, "Failed to create webrtc_video_tee element.");
+    if (!self->webrtc_video_tee || !v_queue || !v_rtph264pay) {
+        GST_ERROR_OBJECT(self, "Failed to create all video elements.");
         return;
     }
-    g_object_set(G_OBJECT ( self->webrtc_video_tee), "allow-not-linked", TRUE, NULL);
+
+    g_object_set(G_OBJECT (self->webrtc_video_tee), "allow-not-linked", TRUE, NULL);
+    g_object_set(G_OBJECT (v_rtph264pay), "config-interval", 1, "timestamp-offset", 0, NULL);
+    g_object_set(G_OBJECT (v_queue), "leaky", 2, NULL);
 
 
     self->webrtc_audio_tee = gst_element_factory_make("tee", "webrtc_audio_tee");
@@ -661,12 +682,16 @@ gst_webrtc_feedback_bin_init(Gstwebrtcfeedbackbin *self) {
     }
     g_object_set(G_OBJECT ( self->webrtc_audio_tee), "allow-not-linked", TRUE, NULL);
 
-    /** Link all elements that can be automatically linked because they have "Always" pads */
-    gst_bin_add_many(GST_BIN (self), self->webrtc_video_tee,/*
+    gst_bin_add_many(GST_BIN (self), self->webrtc_video_tee, v_rtph264pay, v_queue, /*
                      /*self->webrtc_audio_tee , */
                      NULL);
 
-    GstPad *sink_video_pad = gst_element_get_static_pad(self->webrtc_video_tee, "sink");
+    if (!gst_element_link_many(v_rtph264pay, v_queue, self->webrtc_video_tee, NULL)) {
+        GST_ERROR_OBJECT(self, "Failed to link video elements.");
+        return;
+    }
+
+    GstPad *sink_video_pad = gst_element_get_static_pad(v_rtph264pay, "sink");
     ret = gst_element_add_pad(GST_ELEMENT(self),
                               gst_ghost_pad_new_from_template("sink", sink_video_pad,
                                                               gst_static_pad_template_get(
