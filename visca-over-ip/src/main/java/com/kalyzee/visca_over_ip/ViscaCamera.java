@@ -1,6 +1,7 @@
 package com.kalyzee.visca_over_ip;
 
-import android.util.Log;
+import static com.kalyzee.visca_over_ip.ViscaSpecification.SPEC_A;
+import static com.kalyzee.visca_over_ip.ViscaSpecification.SPEC_B;
 
 import com.kalyzee.kontroller_services_api.dtos.camera.MoveDirection;
 import com.kalyzee.kontroller_services_api.dtos.camera.ZoomType;
@@ -39,7 +40,9 @@ public class ViscaCamera {
     private static byte[] PRESET_CALL_CMD = new byte[]{(byte) 0x81, (byte) 0x01, (byte) 0x04,
             (byte) 0x3F, (byte) 0x02, (byte) 0XFF, (byte) 0xFF};
 
-    private static byte[] NO_REPLY_HEADER = new byte[]{(byte) 0x82, (byte) 0x00};
+    /** Visca Spec A is set by default */
+    private byte[] noReplyHeader = new byte[]{(byte) 0x82, (byte) 0x00};
+    private ViscaSpecification currentSpec = SPEC_A;
 
     public ViscaCamera(String address, int port) throws SocketException, UnknownHostException {
         this.socket = new DatagramSocket();
@@ -48,8 +51,18 @@ public class ViscaCamera {
         this.port = port;
     }
 
+    public void setViscaSpecification(ViscaSpecification spec) {
+        if (SPEC_A == spec) {
+            noReplyHeader = new byte[]{(byte) 0x82, (byte) 0x00};
+        } else if (SPEC_B == spec) {
+            noReplyHeader = new byte[]{(byte) 0x01, (byte) 0x00,  (byte) 0x00};
+        } else {
+            throw new IllegalArgumentException("Invalid visca specification.");
+        }
+        this.currentSpec = spec;
+    }
+
     public void move(MoveDirection direction) throws IOException {
-        byte[] packet = null;
         switch (direction) {
             case UP:
                 sendCommand(PAN_TILT_UP_CMD);
@@ -64,7 +77,6 @@ public class ViscaCamera {
                 sendCommand(PAN_TILT_RIGHT_CMD);
                 break;
         }
-        sendCommand(packet);
     }
 
     public void stopMoving() throws IOException {
@@ -72,7 +84,6 @@ public class ViscaCamera {
     }
 
     public void zoom(ZoomType type) throws IOException {
-        byte[] packet = null;
         switch (type) {
             case ADD:
                 sendCommand(ZOOM_ADD_CMD);
@@ -81,7 +92,6 @@ public class ViscaCamera {
                 sendCommand(ZOOM_DEC_CMD);
                 break;
         }
-        sendCommand(packet);
     }
 
     public void stopZooming() throws IOException {
@@ -89,33 +99,25 @@ public class ViscaCamera {
     }
 
     public void setPresetView(int presetId) throws IOException {
-        PRESET_SET_CMD[PRESET_SET_CMD.length-2]= (byte) presetId;
+        PRESET_SET_CMD[PRESET_SET_CMD.length - 2] = (byte) presetId;
         sendCommand(PRESET_SET_CMD);
     }
 
     public void moveToPresetView(int presetId) throws IOException {
-        PRESET_CALL_CMD[PRESET_SET_CMD.length-2]= (byte) presetId;
+        PRESET_CALL_CMD[PRESET_SET_CMD.length - 2] = (byte) presetId;
         sendCommand(PRESET_CALL_CMD);
 
     }
 
-    /**
-     * According to the documentation:
-     * |------packet (3-16 bytes)---------|
-     * header     message      terminator
-     * (1 byte)  (1-14 bytes)  (1 byte)
-     * | X | X . . . . .  . . . . . X | X |
-     * header:                  terminator:
-     * 1 s2 s1 s0 0 r2 r1 r0     0xff
-     * with r,s = recipient, sender msb first
-     * for broadcast the header is 0x88!
-     * we use -1 as recipient to send a broadcast!
-     */
     public byte[] sendCommand(byte[] cmd) throws IOException {
 
-        byte[] buf = new byte[NO_REPLY_HEADER.length + cmd.length];
-        System.arraycopy(NO_REPLY_HEADER, 0, buf, 0, NO_REPLY_HEADER.length);
-        System.arraycopy(cmd, 0, buf, NO_REPLY_HEADER.length, cmd.length);
+        if (SPEC_B == this.currentSpec) {
+            noReplyHeader[noReplyHeader.length-1] = (byte) cmd.length;
+        }
+
+        byte[] buf = new byte[noReplyHeader.length + cmd.length];
+        System.arraycopy(noReplyHeader, 0, buf, 0, noReplyHeader.length);
+        System.arraycopy(cmd, 0, buf, noReplyHeader.length, cmd.length);
 
         DatagramPacket packet
                 = new DatagramPacket(buf, buf.length, address, port);
