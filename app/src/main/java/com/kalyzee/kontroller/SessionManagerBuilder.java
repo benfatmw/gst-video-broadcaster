@@ -37,8 +37,10 @@ import com.kalyzee.panel_connection_manager.executors.camera.CameraRequestsExecu
 import com.kalyzee.panel_connection_manager.executors.network.NetworkRequestsExecutor;
 import com.kalyzee.panel_connection_manager.executors.system.SystemRequestsExecutor;
 import com.kalyzee.panel_connection_manager.executors.video.VideoRequestsExecutor;
+import com.kalyzee.panel_connection_manager.mappers.session.ILoginStatusListener;
 import com.kalyzee.panel_connection_manager.utils.SocketSSLBuilder;
 import com.kalyzee.visca_over_ip.ViscaCamera;
+import com.kalyzee.visca_over_ip.ViscaSpecification;
 
 import org.freedesktop.gstreamer.pipeline.CameraStreamPipeline;
 
@@ -88,14 +90,24 @@ public class SessionManagerBuilder {
     private IUpdateStateListener silentUpdateStateListener;
 
     private Session session;
-    private String panelUri;
-    private CredentialsManager credentialsManager;
-    private Context context;
 
-    public SessionManagerBuilder(CredentialsManager credentialsManager, Context context) {
+    private final String panelUri;
+    private final CredentialsManager credentialsManager;
+    private final Context context;
+    private final String ip;
+    private final int viscaPort;
+    private final String rtspLocation;
+    private final ILoginStatusListener loginStatusListener;
+
+    public SessionManagerBuilder(CredentialsManager credentialsManager, ILoginStatusListener loginStatusListener,
+                                 Context context,  String ip, int viscaPort, String rtspLocation) {
         this.credentialsManager = credentialsManager;
         this.panelUri = credentialsManager.getPanelUri();
         this.context = context;
+        this.ip = ip;
+        this.viscaPort = viscaPort;
+        this.rtspLocation = rtspLocation;
+        this.loginStatusListener = loginStatusListener;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -107,10 +119,10 @@ public class SessionManagerBuilder {
                 AppDatabase.class, "app-database").build();
 
         /** Instantiate managers */
-        viscaCamera = new ViscaCamera( "192.168.2.166", 45678);
+        viscaCamera = new ViscaCamera(ip, viscaPort);
         cameraManager = new CameraManagerImplem(viscaCamera);
         //videoManager = new VideoManagerImplem(context);
-        cameraStreamPipeline = new CameraStreamPipeline(context);
+        cameraStreamPipeline = new CameraStreamPipeline(context, rtspLocation);
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
@@ -153,6 +165,7 @@ public class SessionManagerBuilder {
                 networkRequestsExecutor, videoRequestsExecutor,
                 systemRequestsExecutor,
                 adminRequestsExecutor);
+        session.registerLoginStatusListener(loginStatusListener);
         /** Create a SessionManager object */
         return new SessionManager(session, credentialsManager);
     }

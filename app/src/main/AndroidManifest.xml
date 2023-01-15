@@ -18,7 +18,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.SYSTEM_CAMERA" />
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:label="@string/app_name"
         android:icon="@drawable/kalyzee_logo"
         android:usesCleartextTraffic="true"

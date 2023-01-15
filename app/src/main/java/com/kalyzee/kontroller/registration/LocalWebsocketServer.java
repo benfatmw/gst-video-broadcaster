@@ -132,6 +132,5 @@ public class LocalWebsocketServer extends WebSocketServer {
         credentialsManager.setDeviceRegistrationStatus(true);
         credentialsManager.setAllowFallback(false);
         credentialsManager.storeCredentials(panelUri, certificate);
-        //credentialsManager.saveFallbackCredentials();
     }
 }

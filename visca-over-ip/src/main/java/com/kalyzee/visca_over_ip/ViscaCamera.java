@@ -3,6 +3,8 @@ package com.kalyzee.visca_over_ip;
 import static com.kalyzee.visca_over_ip.ViscaSpecification.SPEC_A;
 import static com.kalyzee.visca_over_ip.ViscaSpecification.SPEC_B;
 
+import android.util.Log;
+
 import com.kalyzee.kontroller_services_api.dtos.camera.MoveDirection;
 import com.kalyzee.kontroller_services_api.dtos.camera.ZoomType;
 
@@ -12,6 +14,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 
 public class ViscaCamera {
 
@@ -40,26 +43,13 @@ public class ViscaCamera {
     private static byte[] PRESET_CALL_CMD = new byte[]{(byte) 0x81, (byte) 0x01, (byte) 0x04,
             (byte) 0x3F, (byte) 0x02, (byte) 0XFF, (byte) 0xFF};
 
-    /** Visca Spec A is set by default */
-    private byte[] noReplyHeader = new byte[]{(byte) 0x82, (byte) 0x00};
-    private ViscaSpecification currentSpec = SPEC_A;
+    public static ViscaSpecification currentSpec;
 
     public ViscaCamera(String address, int port) throws SocketException, UnknownHostException {
         this.socket = new DatagramSocket();
         socket.setSoTimeout(10000);
         this.address = InetAddress.getByName(address);
         this.port = port;
-    }
-
-    public void setViscaSpecification(ViscaSpecification spec) {
-        if (SPEC_A == spec) {
-            noReplyHeader = new byte[]{(byte) 0x82, (byte) 0x00};
-        } else if (SPEC_B == spec) {
-            noReplyHeader = new byte[]{(byte) 0x01, (byte) 0x00,  (byte) 0x00};
-        } else {
-            throw new IllegalArgumentException("Invalid visca specification.");
-        }
-        this.currentSpec = spec;
     }
 
     public void move(MoveDirection direction) throws IOException {
@@ -111,8 +101,15 @@ public class ViscaCamera {
 
     public byte[] sendCommand(byte[] cmd) throws IOException {
 
-        if (SPEC_B == this.currentSpec) {
+        byte[] noReplyHeader = null;
+
+        if (SPEC_A == currentSpec) {
+            noReplyHeader = new byte[]{(byte) 0x82, (byte) 0x00};
+        } else if (SPEC_B == currentSpec) {
+            noReplyHeader = new byte[]{(byte) 0x01, (byte) 0x00,  (byte) 0x00};
             noReplyHeader[noReplyHeader.length-1] = (byte) cmd.length;
+        } else {
+            throw new IllegalArgumentException("Invalid visca specification.");
         }
 
         byte[] buf = new byte[noReplyHeader.length + cmd.length];

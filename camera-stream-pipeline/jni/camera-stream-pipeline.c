@@ -32,6 +32,7 @@ typedef struct _CustomData {
     GMainContext *context;        /* GLib context used to run the main loop */
     GMainLoop *main_loop;         /* GLib main loop */
     gboolean initialized;         /* To avoid informing the UI multiple times about the initialization */
+    gchar *rtsp_location;
 } CustomData;
 
 /** These global variables cache values which are not changing during execution */
@@ -172,7 +173,7 @@ app_function(void *userdata) {
 
     /** Build pipeline */
     gchar *launch_string = g_strdup_printf(launch_string_template,
-                                           "rtsp://192.168.2.166:5000/main.h264");
+                                           data->rtsp_location);
     data->pipeline = gst_parse_launch(launch_string, &error);
     if (error) {
         gchar *message =
@@ -189,8 +190,8 @@ app_function(void *userdata) {
     g_signal_connect (data->webrtc_feedback_bin, "on-ice-candidate",
                       G_CALLBACK(on_ice_candidate_handler), (gpointer) data);
 
-    data->live_publisher_bin =  gst_bin_get_by_name(GST_BIN (data->pipeline),
-                                                    "live_publisher_bin");
+    data->live_publisher_bin = gst_bin_get_by_name(GST_BIN (data->pipeline),
+                                                   "live_publisher_bin");
 
     /** Instruct the bus to emit signals for each received message, and connect to the interesting signals */
     bus = gst_element_get_bus(data->pipeline);
@@ -268,17 +269,17 @@ on_ice_candidate_handler(G_GNUC_UNUSED GstElement *webrtcfeedbackbin,
 
 /** Instruct the native code to create its internal data structure, pipeline and thread */
 static void
-gst_native_init(JNIEnv *env, jobject thiz) {
+gst_native_init(JNIEnv *env, jobject thiz, jstring j_rtsp_location) {
     CustomData *data = g_new0 (CustomData, 1);
     SET_CUSTOM_DATA (env, thiz, custom_data_field_id, data);
     GST_DEBUG_CATEGORY_INIT (debug_category, "camera-stream-pipeline", 0,
                              "Camera stream pipeline.");
     gst_debug_set_threshold_for_name("camera-stream-pipeline", GST_LEVEL_DEBUG);
     gst_debug_set_threshold_for_name("webrtc*", GST_LEVEL_INFO);
-    //gst_debug_set_threshold_for_name("*", GST_LEVEL_INFO);
     gst_debug_set_threshold_for_name("rtmp*", GST_LEVEL_DEBUG);
     GST_DEBUG ("Created CustomData at %p", data);
     data->app = (*env)->NewGlobalRef(env, thiz);
+    data->rtsp_location = (*env)->GetStringUTFChars(env, j_rtsp_location, 0);
     GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
     pthread_create(&gst_app_thread, NULL, &app_function, data);
 
@@ -529,7 +530,7 @@ gst_native_stop_stream(JNIEnv *env, jobject thiz, jint id) {
 
 /** List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-        {"nativeInit",                 "()V",                                                              (void *) gst_native_init},
+        {"nativeInit",                 "(Ljava/lang/String;)V",                                            (void *) gst_native_init},
         {"nativePlay",                 "()V",                                                              (void *) gst_native_play},
         {"nativeFinalize",             "()V",                                                              (void *) gst_native_finalize},
         {"nativePause",                "()V",                                                              (void *) gst_native_pause},

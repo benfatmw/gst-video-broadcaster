@@ -35,7 +35,6 @@ public class PanelConnectionTask implements Runnable {
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void run() {
-        while (looping) {
             try {
                 /** Check if the camera is logged in */
                 if (!session.isLoggedIn()) {
@@ -56,13 +55,11 @@ public class PanelConnectionTask implements Runnable {
                  */
                 if (credentialsManager.isFallbackAllowed()) {
                     credentialsManager.deleteCredentialsFile();
-                    Log.w (TAG, ATTEMPTING_TO_RESTART_APPLICATION);
-                    System.exit(0);
                 }
-
+                Session.onLoginStatusChanged(false);
             } catch (Exception e) {
+                Session.onLoginStatusChanged(false);
                 Log.e(TAG, FAILED_TO_ESTABLISH_CONNECTION_WITH_THE_PANEL, e);
             }
-        }
     }
 }

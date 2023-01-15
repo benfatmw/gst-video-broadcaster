@@ -12,7 +12,7 @@ import java.util.HashMap;
 public class CameraStreamPipeline {
     public static final String TAG = "RtspToWebrtc";
 
-    private native void nativeInit();     // Initialize native code, build pipeline, etc
+    private native void nativeInit(String rtspLocation);     // Initialize native code, build pipeline, etc
 
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
 
@@ -42,7 +42,7 @@ public class CameraStreamPipeline {
     /**
      * Called when the activity is first created.
      */
-    public CameraStreamPipeline(Context context) {
+    public CameraStreamPipeline(Context context, String rtspLocation) {
         /** Initialize GStreamer and warn if it fails */
         try {
             GStreamer.init(context);
@@ -50,7 +50,7 @@ public class CameraStreamPipeline {
             Log.e(TAG, "Failed to initialize Gstreamer", e);
             return;
         }
-        nativeInit();
+        nativeInit(rtspLocation);
     }
 
     public long startPreview(int id, String[] stuns, String[] turns,

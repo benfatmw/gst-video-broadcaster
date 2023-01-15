@@ -1,5 +1,7 @@
 package com.kalyzee.panel_connection_manager;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -10,6 +12,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 import androidx.security.crypto.EncryptedSharedPreferences;
 import androidx.security.crypto.MasterKeys;
+
 
 import com.kalyzee.panel_connection_manager.exceptions.admin.FetchDeviceCredentialsException;
 import com.kalyzee.panel_connection_manager.exceptions.admin.SaveBackupCredentialsFailure;
@@ -88,15 +91,11 @@ public class CredentialsManager {
                     restoreFallbackCredentials();
                 }
             }
-            prefs = EncryptedSharedPreferences.create(
-                    name,
-                    MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
-                    applicationContext,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            );
+
+            prefs = applicationContext.getSharedPreferences(name ,MODE_PRIVATE);
+
         } catch (Exception e) {
-            Log.e(TAG, FAILED_TO_CREATE_ENCRYPTED_SHARED_PREFERENCES + e);
+            Log.e(TAG, FAILED_TO_CREATE_ENCRYPTED_SHARED_PREFERENCES, e);
         }
         return prefs;
     }

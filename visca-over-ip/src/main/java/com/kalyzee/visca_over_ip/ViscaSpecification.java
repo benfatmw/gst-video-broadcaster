@@ -2,8 +2,8 @@ package com.kalyzee.visca_over_ip;
 
 public enum ViscaSpecification {
 
-    SPEC_A("SPEC_A"),
-    SPEC_B("SPEC_B");
+    SPEC_A("VISCA-SPEC-A"),
+    SPEC_B("VISCA-SPEC-B");
 
     private String spec;
 

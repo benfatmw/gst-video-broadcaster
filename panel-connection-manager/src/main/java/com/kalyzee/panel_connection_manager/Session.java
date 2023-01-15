@@ -1,7 +1,6 @@
 package com.kalyzee.panel_connection_manager;
 
 
-
 import static com.kalyzee.panel_connection_manager.mappers.RequestCategory.SESSION;
 import static com.kalyzee.panel_connection_manager.mappers.session.LoginErrorCode.UNAUTHORIZED;
 import static com.kalyzee.panel_connection_manager.mappers.session.SessionAction.LOGIN;
@@ -15,6 +14,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.kalyzee.kontroller_services_api.dtos.video.VideoContext;
+import com.kalyzee.kontroller_services_api.interfaces.ContextChangedListener;
+import com.kalyzee.kontroller_services_api.interfaces.video.IVideoUploadStatusChangedListener;
 import com.kalyzee.panel_connection_manager.exceptions.session.ConnectFailureException;
 import com.kalyzee.panel_connection_manager.exceptions.session.LoginConnectionFailureException;
 import com.kalyzee.panel_connection_manager.exceptions.session.LoginInvalidServerResponseException;
@@ -26,6 +28,7 @@ import com.kalyzee.panel_connection_manager.mappers.ErrorResponseContent;
 import com.kalyzee.panel_connection_manager.mappers.RequestObject;
 import com.kalyzee.panel_connection_manager.mappers.ResponseObject;
 import com.kalyzee.panel_connection_manager.mappers.ResponseType;
+import com.kalyzee.panel_connection_manager.mappers.session.ILoginStatusListener;
 import com.kalyzee.panel_connection_manager.mappers.session.LoginErrorCode;
 import com.kalyzee.panel_connection_manager.mappers.session.LoginRequestContent;
 import com.kalyzee.panel_connection_manager.mappers.session.LoginResponseContent;
@@ -34,6 +37,9 @@ import com.kalyzee.panel_connection_manager.mappers.session.SessionAction;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -73,11 +79,14 @@ public class Session {
     private static final String DEVICE_ALREADY_CONNECTED = "Attempt to connect already-connected socket.";
     private static final String DEVICE_ALREADY_DISCONNECTED = "Attempt to disconnect already-disconnected socket.";
     private static final String START_HANDLING_REMOTE_REQUESTS = "Start handling remote requests. socket id: ";
+    private static final String REGISTER_LOGIN_STATUS_LISTENER = "Register login status listener.";
+    private static final String UNREGISTER_LOGIN_STATUS_LISTENER = "Unregister login status listener.";
 
     private static final int TIMEOUT_S = 20;
 
     private final BlockingQueue<Object> panelRequestsQueue = new LinkedBlockingQueue<>();
     private final ExecutorService executorService = Executors.newFixedThreadPool(1);
+    private static List<ILoginStatusListener> loginStatusListenersList = new ArrayList<>();
     private PanelRequestsConsumer panelRequestsConsumer;
     private String authToken;
 
@@ -132,7 +141,7 @@ public class Session {
         return isLoggedIn;
     }
 
-    public void login(LoginRequestContent content) throws UnsupportedEncodingException, JsonProcessingException {
+    public void login(LoginRequestContent content) throws JsonProcessingException {
 
         /** Sanity check */
         if (content == null) {
@@ -211,6 +220,7 @@ public class Session {
                     LoginResponseContent.class);
             this.authToken = loginRespContent.getAuthToken();
             isLoggedIn = true;
+            onLoginStatusChanged(true);
             socket.on(CAMERA_MESSAGE, onPanelRequest);
             Log.i(TAG, CAMERA_LOGIN_SUCCESS + socket.id());
             socket.on(Socket.EVENT_DISCONNECT, onPanelDisconnected);
@@ -277,6 +287,7 @@ public class Session {
         disconnect();
         socket.off(CAMERA_MESSAGE, onPanelRequest);
         isLoggedIn = false;
+        onLogoutStatusChanged(true);
     }
 
     private void connect() {
@@ -319,4 +330,35 @@ public class Session {
         socket.disconnect();
     }
 
+    public void registerLoginStatusListener(ILoginStatusListener listener) {
+        Log.i(TAG, REGISTER_LOGIN_STATUS_LISTENER);
+        loginStatusListenersList.add((ILoginStatusListener) listener);
+    }
+
+    public void unregisterLoginStatusListener(ILoginStatusListener listener) {
+        Log.i(TAG, UNREGISTER_LOGIN_STATUS_LISTENER);
+        loginStatusListenersList.remove((ILoginStatusListener) listener);
+    }
+
+    public static void onLoginStatusChanged(boolean status) {
+        /** Iterating ILoginStatusListener ArrayList using Iterator */
+        Iterator itr = loginStatusListenersList.iterator();
+        while (itr.hasNext()) {
+            @SuppressWarnings("unchecked")
+            ILoginStatusListener listener = (ILoginStatusListener) itr.next();
+            listener.onLoginResult(status);
+        }
+    }
+
+    public static void onLogoutStatusChanged(boolean status) {
+        /** Iterating ILoginStatusListener ArrayList using Iterator */
+        Iterator itr = loginStatusListenersList.iterator();
+        while (itr.hasNext()) {
+            @SuppressWarnings("unchecked")
+            ILoginStatusListener listener = (ILoginStatusListener) itr.next();
+            listener.onLogoutResult(status);
+        }
+    }
 }
+
+
