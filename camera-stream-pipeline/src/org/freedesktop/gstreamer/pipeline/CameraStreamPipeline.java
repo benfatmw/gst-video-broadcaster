@@ -12,31 +12,31 @@ import java.util.HashMap;
 public class CameraStreamPipeline {
     public static final String TAG = "RtspToWebrtc";
 
-    private native void nativeInit(String rtspLocation);     // Initialize native code, build pipeline, etc
+    public native void nativeInit(String rtspLocation);     // Initialize native code, build pipeline, etc
 
-    private native void nativeFinalize(); // Destroy pipeline and shutdown native code
+    public native void nativeFinalize(); // Destroy pipeline and shutdown native code
 
-    private native void nativePlay();     // Set pipeline to PLAYING
+    public native void nativePlay();     // Set pipeline to PLAYING
 
-    private native void nativePause();    // Set pipeline to PAUSED
+    public native void nativePause();    // Set pipeline to PAUSED
 
-    private static native boolean nativeClassInit(); // Initialize native class: cache Method IDs for callbacks
+    public static native boolean nativeClassInit(); // Initialize native class: cache Method IDs for callbacks
 
-    private native long nativeStartPreview(int id, String[] stuns, String[] turns);
+    public native long nativeStartPreview(int id, String[] stuns, String[] turns);
 
-    private native void nativeStopPreview(int id);
+    public native void nativeStopPreview(int id);
 
-    private native void nativeSetRemoteDescription(int id, String type, String sdp);
+    public native void nativeSetRemoteDescription(int id, String type, String sdp);
 
-    private native void nativeAddIceCandidate(int id, int sdpMLineIndex, String candidate);
+    public native void nativeAddIceCandidate(int id, int sdpMLineIndex, String candidate);
 
-    private native void nativeStartStream(int id, LiveProfile liveProfile);
+    public native void nativeStartStream(int id, LiveProfile liveProfile);
 
-    private native void nativeStopStream(int id);
+    public native void nativeStopStream(int id);
 
-    private long nativeCustomData;      // Native code will use this to keep private data
+    public long nativeCustomData;      // Native code will use this to keep private data
 
-    private static HashMap<Integer, WebrtcSignallingMessagesListener> webrtcSignallingMessagesListenersMap
+    public static HashMap<Integer, WebrtcSignallingMessagesListener> webrtcSignallingMessagesListenersMap
             = new HashMap<Integer, WebrtcSignallingMessagesListener>();
 
     /**

@@ -284,6 +284,12 @@ public class Session {
          * --> Stop listening to Panel requests
          */
         executorService.shutdown();
+        cameraRequestsExecutor.shutdown();
+        networkRequestsExecutor.shutdown();
+        videoRequestsExecutor.shutdown();
+        systemRequestsExecutor.shutdown();
+        adminRequestsExecutor.shutdown();
+
         disconnect();
         socket.off(CAMERA_MESSAGE, onPanelRequest);
         isLoggedIn = false;

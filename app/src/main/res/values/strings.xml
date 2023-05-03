@@ -11,7 +11,7 @@
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <!-- Strings related to login -->
     <string name="ip">IP Address</string>
-    <string name="prompt_uri">RTSP Stream URI</string>
+    <string name="prompt_uri">RTSP Stream URI *</string>
     <string name="visca_port">VISCA Port</string>
     <string name="action_login"> Login</string>
     <string name="device_not_registered">Device is not yet registered. Please register it first.</string>

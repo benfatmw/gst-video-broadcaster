@@ -27,6 +27,7 @@ import com.kalyzee.kontroller_services_api_implem.system.update.install.UpdateIn
 import com.kalyzee.kontroller_services_api_implem.system.update.mandatory.MandatoryUpdateManager;
 import com.kalyzee.kontroller_services_api_implem.system.update.silent.ScheduledUpdateManager;
 import com.kalyzee.kontroller_services_api_implem.system.update.silent.SilentUpdateStateListener;
+import com.kalyzee.kontroller_services_api_implem.video.VideoContextChangedListener;
 import com.kalyzee.kontroller_services_api_implem.video.VideoManagerGstImplem;
 import com.kalyzee.kontroller_services_api_implem.video.VideoManagerImplem;
 import com.kalyzee.panel_connection_manager.CredentialsManager;
@@ -70,6 +71,8 @@ public class SessionManagerBuilder {
     private VideoRequestsExecutor videoRequestsExecutor;
     private SystemRequestsExecutor systemRequestsExecutor;
     private AdminRequestsExecutor adminRequestsExecutor;
+
+    private VideoContextChangedListener videoContextChangedListener;
 
     private ViscaCamera viscaCamera;
     private CameraManagerImplem cameraManager;
@@ -149,6 +152,9 @@ public class SessionManagerBuilder {
                context);
         mandatoryUpdateManager = new MandatoryUpdateManager(updateSessionManager);
 
+        /** Instantiate Events listeners */
+        videoContextChangedListener = new VideoContextChangedListener(socket);
+        videoManager.registerContextChangedListener(videoContextChangedListener);
 
         /** Instantiate and register events listeners */
         cameraRequestsExecutor = new CameraRequestsExecutor(cameraManager);

@@ -54,6 +54,11 @@ public class AdminRequestsExecutor implements PanelRequestsExecutor {
     }
 
     @Override
+    public void shutdown() {
+
+    }
+
+    @Override
     public void registerEventListener(ContextChangedListener listener) {
         return;
     }

@@ -35,6 +35,7 @@ import org.webrtc.PeerConnectionFactory;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import io.socket.client.Socket;
@@ -63,6 +64,7 @@ public class VideoManagerGstImplem implements VideoManager {
     private static final String FAILED_TO_CREATE_WEBRTC_FEEDBACK_CONNECTION = "Failed to create webrtc feedback connection.";
     private static final String FAILED_TO_START_LIVE = "Failed to start live.";
     private static final String FAILED_TO_STOP_LIVE = "Failed to stop live.";
+    private static final String FAILED_TO_CLEANUP_RESOURCES = "Failed to cleanup resources.";
 
     private final Context context;
     private final CameraStreamPipeline cameraStreamPipeline;
@@ -71,6 +73,8 @@ public class VideoManagerGstImplem implements VideoManager {
     private static List<IRecordErrorListener> recordErrorListenersList = new ArrayList<>();
 
     private static HashMap<Socket, WebrtcSignallingClient> webrtcSignallingClientsMap = new HashMap<Socket, WebrtcSignallingClient>();
+
+    private int currentLiveId = 0;
 
     public VideoManagerGstImplem(Context context, CameraStreamPipeline cameraStreamPipeline) {
         this.context = context;
@@ -97,16 +101,21 @@ public class VideoManagerGstImplem implements VideoManager {
     @Override
     public RecordSessionContext geRecordSessionContext(int sessionId) throws GetRecordSessionContextFailureException {
         Log.i(TAG, GET_RECORD_CONTEXT_BY_ID);
-        return new RecordSessionContext(new VideoInformation("Stub",0,0,0), "IDLE");
+        return new RecordSessionContext(new VideoInformation("Stub", 0, 0, 0), "IDLE");
     }
+
+    VideoContext currentLiveContext = new VideoContext(false, 0, "IDLE", 0, 0, 0);
 
     @Override
     public int startLive(LiveProfile liveProfile) throws StartLiveFailureException {
         try {
             Log.i(TAG, START_LIVE);
-            int id = (int) (new Date().getTime()/1000);
-            cameraStreamPipeline.startStream(id, liveProfile);
-            return id;
+            currentLiveId = (int) (new Date().getTime() / 1000);
+            cameraStreamPipeline.startStream(currentLiveId, liveProfile);
+            Date date = new Date();
+            currentLiveContext = new VideoContext(true, date.getTime(), "", 0, 0, 0);
+            onContextUpdated(currentLiveContext);
+            return currentLiveId;
         } catch (Exception e) {
             /** Catch exception and wrap it in #StartLiveFailureException. */
             throw new StartLiveFailureException(FAILED_TO_START_LIVE, e);
@@ -118,6 +127,10 @@ public class VideoManagerGstImplem implements VideoManager {
         try {
             Log.i(TAG, STOP_LIVE);
             cameraStreamPipeline.stopStream(id);
+            currentLiveContext.setInLive(false);
+            onContextUpdated(currentLiveContext);
+            currentLiveId = 0;
+            currentLiveContext = null;
         } catch (Exception e) {
             /** Catch exception and wrap it in #StopLiveFailureException. */
             throw new StopLiveFailureException(FAILED_TO_STOP_LIVE, e);
@@ -139,7 +152,7 @@ public class VideoManagerGstImplem implements VideoManager {
     @Override
     public VideoContext getVideoContext() throws GetVideoContextException {
         Log.i(TAG, GET_VIDEO_CONTEXT);
-        return new VideoContext(false, 0, "IDLE", 0,0,0);
+        return currentLiveContext ;
     }
 
     @Override
@@ -163,13 +176,13 @@ public class VideoManagerGstImplem implements VideoManager {
     @Override
     public void registerContextChangedListener(ContextChangedListener listener) {
         Log.i(TAG, REGISTER_CONTEXT_CHANGED_LISTENER);
-        videoContextListenersList.add((ContextChangedListener<VideoContext>)listener);
+        videoContextListenersList.add((ContextChangedListener<VideoContext>) listener);
     }
 
     @Override
     public void unregisterContextChangedListener(ContextChangedListener listener) {
         Log.i(TAG, UNREGISTER_CONTEXT_CHANGED_LISTENER);
-        videoContextListenersList.remove((ContextChangedListener<VideoContext>)listener);
+        videoContextListenersList.remove((ContextChangedListener<VideoContext>) listener);
     }
 
     @Override
@@ -194,5 +207,61 @@ public class VideoManagerGstImplem implements VideoManager {
     public void unregisterRecordErrorListener(IRecordErrorListener listener) {
         Log.i(TAG, UNREGISTER_RECORD_ERROR_LISTENER);
         recordErrorListenersList.remove(listener);
+    }
+
+    @Override
+    public void cleanup() {
+        try {
+            Iterator itr;
+            for (WebrtcSignallingClient client : webrtcSignallingClientsMap.values()) {
+                client.stopWebrtcPreview();
+            }
+            for (Socket socket : webrtcSignallingClientsMap.keySet()) {
+                socket.disconnect();
+                socket = null;
+            }
+            itr = videoContextListenersList.iterator();
+            while (itr.hasNext()) {
+                ContextChangedListener<VideoContext> videoContextListener = (ContextChangedListener<VideoContext>) itr.next();
+                unregisterContextChangedListener(videoContextListener);
+            }
+
+            itr = videoUploadStatusChangedListenersList.iterator();
+            while (itr.hasNext()) {
+                IVideoUploadStatusChangedListener videoUploadStatusChangedListener = (IVideoUploadStatusChangedListener) itr.next();
+                unregisterVideoUploadStatusChangedListener(videoUploadStatusChangedListener);
+            }
+
+            itr = recordErrorListenersList.iterator();
+            while (itr.hasNext()) {
+                IRecordErrorListener recordErrorListener = (IRecordErrorListener) itr.next();
+                unregisterRecordErrorListener(recordErrorListener);
+            }
+
+            if (currentLiveId != 0) {
+                stopLive(currentLiveId);
+            }
+            cameraStreamPipeline.nativeFinalize();
+        } catch (Exception e) {
+            Log.e(TAG, FAILED_TO_CLEANUP_RESOURCES);
+        }
+    }
+
+    /* Methods called by native code to emit events */
+    public static void onContextUpdated(VideoContext videoContext) {
+        Log.i(TAG, "Video context updated: isInLive: " + videoContext.isInLive()
+                + " liveStartedAt: " + videoContext.getLiveStartedAt()
+                + " RecordState: " + videoContext.getRecordState()
+                + " recordStartedAt: " + videoContext.getRecordStartedAt()
+                + " recordStoppedAt: " + videoContext.getRecordStoppedAt()
+                + " currentScene: " + videoContext.getCurrentScene());
+
+        /** Iterating ContextChangedListeners ArrayList using Iterator */
+        Iterator itr = videoContextListenersList.iterator();
+        while (itr.hasNext()) {
+            @SuppressWarnings("unchecked")
+            ContextChangedListener<VideoContext> listener = (ContextChangedListener<VideoContext>) itr.next();
+            listener.onContextUpdated(videoContext);
+        }
     }
 }

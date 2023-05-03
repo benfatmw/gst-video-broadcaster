@@ -138,7 +138,6 @@ public class PanelRequestsConsumer implements Runnable {
         } catch (JSONException | JsonProcessingException e) {
             Log.e(TAG, FAILED_TO_SERIALIZE_CAMERA_RESPONSE, e);
         }
-
     }
 
 }

@@ -133,6 +133,11 @@ public class SystemRequestsExecutor implements PanelRequestsExecutor {
     }
 
     @Override
+    public void shutdown() {
+
+    }
+
+    @Override
     public void registerEventListener(ContextChangedListener listener) {
         systemManager.registerContextChangedListener(listener);
     }

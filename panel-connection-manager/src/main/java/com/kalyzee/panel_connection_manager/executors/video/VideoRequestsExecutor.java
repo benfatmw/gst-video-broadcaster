@@ -129,6 +129,11 @@ public class VideoRequestsExecutor implements PanelRequestsExecutor {
     }
 
     @Override
+    public void shutdown() {
+        videoManager.cleanup();
+    }
+
+    @Override
     public void registerEventListener(ContextChangedListener listener) {
         videoManager.registerContextChangedListener(listener);
     }

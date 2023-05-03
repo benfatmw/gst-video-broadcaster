@@ -54,4 +54,6 @@ public interface VideoManager {
     void registerRecordErrorListener(IRecordErrorListener listener);
 
     void unregisterRecordErrorListener(IRecordErrorListener listener);
+
+    void cleanup();
 }

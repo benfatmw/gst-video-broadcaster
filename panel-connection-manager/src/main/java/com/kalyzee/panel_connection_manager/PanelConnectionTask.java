@@ -46,7 +46,6 @@ public class PanelConnectionTask implements Runnable {
                      */
                     session.handlePanelRequests();
                 }
-                Thread.sleep(10000);
             } catch (LoginUnauthorizedAccessException e) {
                 /**
                  * Device credentials are revoked.

@@ -179,6 +179,11 @@ public class VideoManagerImplem implements VideoManager {
         recordErrorListenersList.remove(listener);
     }
 
+    @Override
+    public void cleanup() {
+
+    }
+
     private PeerConnectionFactory createPeerConnectionFactory(Context context) {
         PeerConnectionFactory peerConnectionFactory = null;
         /** Initialize PeerConnectionFactory globals. */

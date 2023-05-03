@@ -75,6 +75,11 @@ public class CameraRequestsExecutor implements PanelRequestsExecutor {
     }
 
     @Override
+    public void shutdown() {
+
+    }
+
+    @Override
     public void registerEventListener(ContextChangedListener listener) {
         cameraService.registerContextChangedListener(listener);
     }

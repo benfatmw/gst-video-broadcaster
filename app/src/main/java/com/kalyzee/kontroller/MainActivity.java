@@ -13,8 +13,10 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -62,7 +64,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Button logoutButton;
     private TextView statusMessageTextView;
     private ProgressBar progressBar;
-    private ViscaSpecification selectedViscaSpec;
 
     private ILoginStatusListener loginStatusListener = new LoginStatusListener();
     private ExecutorService executorService = Executors.newFixedThreadPool(1);
@@ -156,6 +157,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             @Override
             public void onClick(View view) {
+                if (TextUtils.isEmpty(rtspUriEditText.getText())) {
+                    statusMessageTextView.setTextColor(RED);
+                    statusMessageTextView.setText("RTSP stream URI is required.");
+                    return;
+                }
                 progressBar.setVisibility(View.GONE);
                 progressBar.setVisibility(View.VISIBLE);
                 executorService.execute(new Runnable() {
@@ -165,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                                     loginStatusListener,
                                     getApplicationContext(),
                                     iPEditText.getText().toString(),
-                                    Integer.parseInt(visaPortEditText.getText().toString()),
+                                    parseToInt(visaPortEditText.getText().toString(), 0),
                                     rtspUriEditText.getText().toString()).build();
                             sessionManager.startSession(macAddress);
 
@@ -191,6 +197,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         } catch (Exception e) {
                             Log.e(TAG, FAILED_TO_STOP_SESSION, e);
                         }
+                        sessionManager.stopSession();
+                        sessionManager = null;
                     }
                 });
             }
@@ -269,7 +277,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     protected void onDestroy() {
-        sessionManager.stopSession();
         super.onDestroy();
     }
 
@@ -282,5 +289,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
 
+    }
+
+    public static int parseToInt(String stringToParse, int defaultValue) {
+        try {
+            return Integer.parseInt(stringToParse);
+        } catch(NumberFormatException ex) {
+            return defaultValue; //Use default value if parsing failed
+        }
     }
 }

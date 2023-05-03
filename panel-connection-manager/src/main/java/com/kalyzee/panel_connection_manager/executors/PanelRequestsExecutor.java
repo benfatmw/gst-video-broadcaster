@@ -10,6 +10,8 @@ public interface PanelRequestsExecutor {
 
     JSONObject execute(String action, Object actionContent) throws JSONException, JsonProcessingException;
 
+    void shutdown();
+
     void registerEventListener(ContextChangedListener listener);
 
     void unregisterEventListener(ContextChangedListener listener);
