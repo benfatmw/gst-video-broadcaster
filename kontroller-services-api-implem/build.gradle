@@ -32,7 +32,7 @@ dependencies {
     api project(path: ':visca-over-ip')
     implementation 'androidx.room:room-runtime:2.1.0'
     annotationProcessor 'androidx.room:room-compiler:2.1.0'
-    implementation 'org.webrtc:google-webrtc:1.0.32006'
+    implementation 'com.infobip:google-webrtc:1.0.0035529'
     implementation 'androidx.appcompat:appcompat:1.4.2'
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'io.socket:socket.io-client:2.0.1'
